@@ -1,0 +1,2874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Matter Gimmick</title>
+    <!-- Adding the Mind Matters logo as the webpage favicon -->
+    <link rel="icon" href="Mind Matters logo.png" type="image/png">
+    
+    <style>
+        :root {
+            /* Apple Dark Mode Palette */
+            --apple-bg: rgba(30, 30, 32, 0.6);
+            --apple-border: rgba(255, 255, 255, 0.15);
+            --apple-text: rgba(255, 255, 255, 0.95);
+            --apple-text-muted: rgba(235, 235, 245, 0.6);
+            --apple-blue: #0A84FF;
+            --apple-orange: #FF9F0A;
+            --apple-control-bg: rgba(255, 255, 255, 0.12);
+            --apple-control-hover: rgba(255, 255, 255, 0.18);
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            /* Native Apple System Typography */
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--apple-text);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #input-video {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Apple-style Camera Preview */
+        #camera-preview {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            width: 200px;
+            height: 150px;
+            z-index: 10;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border: 0.5px solid var(--apple-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: scaleX(-1);
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        #camera-preview.planet-mode {
+            border-color: rgba(255, 159, 10, 0.4);
+        }
+
+        /* Camera PIP Hidden State */
+        #camera-preview.hidden-pip {
+            opacity: 0;
+            transform: scaleX(-1) translateY(30px) scale(0.9);
+            pointer-events: none;
+        }
+
+        #camera-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 16px;
+        }
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--apple-text);
+            font-size: 20px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            z-index: 20;
+            pointer-events: none;
+            text-align: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading span {
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--apple-text-muted);
+            display: block;
+            margin-top: 8px;
+        }
+
+        /* Apple-style UI Toggle Handle */
+        #ui-toggle {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%) translateX(0);
+            width: 24px;
+            height: 64px;
+            background: var(--apple-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border: 0.5px solid var(--apple-border);
+            border-left: none;
+            border-radius: 0 12px 12px 0;
+            cursor: pointer;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--apple-text-muted);
+            transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        #ui-toggle:hover {
+            background: rgba(45, 45, 48, 0.7);
+            color: var(--apple-text);
+        }
+
+        #ui-toggle svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* Unified Apple UI Layer */
+        #main-ui {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+            width: 320px;
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        /* Premium Scrollbar Styling */
+        #main-ui::-webkit-scrollbar {
+            width: 6px;
+        }
+        #main-ui::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        #main-ui::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        #main-ui::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #main-ui.hidden-ui {
+            transform: translateX(-120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .panel {
+            background: rgba(20, 20, 24, 0.45);
+            backdrop-filter: saturate(180%) blur(24px);
+            -webkit-backdrop-filter: saturate(180%) blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            padding: 24px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
+        }
+
+        .title-section {
+            position: relative;
+        }
+
+        /* Close Button Styling */
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            color: var(--apple-text-muted);
+            width: 28px;
+            height: 28px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+            padding: 0;
+        }
+        
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1) rotate(90deg);
+        }
+        
+        .close-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .close-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+        }
+
+        /* Pin Button Styling */
+        .pin-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            color: var(--apple-text-muted);
+            width: 28px;
+            height: 28px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
+            padding: 0;
+        }
+
+        .pin-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .pin-btn:active {
+            transform: scale(0.9);
+        }
+
+        .pin-btn.pinned {
+            background: rgba(10, 132, 255, 0.25);
+            border-color: rgba(10, 132, 255, 0.6);
+            color: #0A84FF;
+            box-shadow: 0 0 12px rgba(10, 132, 255, 0.4);
+            transform: rotate(-45deg);
+        }
+
+        .pin-btn.pinned:hover {
+            background: rgba(10, 132, 255, 0.4);
+            border-color: rgba(10, 132, 255, 0.8);
+            color: #fff;
+            transform: rotate(-45deg) scale(1.1);
+        }
+
+        .pin-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        /* Premium Fullscreen Button Styling */
+        #fullscreen-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            z-index: 50;
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            background: rgba(20, 20, 24, 0.45);
+            backdrop-filter: saturate(180%) blur(24px);
+            -webkit-backdrop-filter: saturate(180%) blur(24px);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            color: var(--apple-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        #fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        #fullscreen-btn:active {
+            transform: scale(0.9);
+        }
+
+        #fullscreen-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        .title-section h1 {
+            margin: 0 0 20px 0;
+            font-size: 1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            padding-bottom: 15px;
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+            transition: background 0.5s;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .mode-planet h1 { background-image: linear-gradient(90deg, #ffaa00, #ff5500); }
+        .mode-brain h1 { background-image: linear-gradient(90deg, #00e5ff, #0077ff); }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            font-size: 0.8rem;
+            line-height: 2;
+            color: #b0b5c0;
+        }
+        
+        li span {
+            font-weight: 600;
+            margin-right: 12px;
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .mode-planet .planet-only { display: block; }
+        .mode-planet .brain-only { display: none; }
+        .mode-brain .planet-only { display: none; }
+        .mode-brain .brain-only { display: block; }
+
+        .mode-planet li span { color: #ffaa00; text-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
+        .mode-brain li span { color: #00e5ff; text-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .control-group:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        label {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #9ba1ad;
+            flex-grow: 1;
+            letter-spacing: 0.5px;
+        }
+
+        /* Custom Input Styling */
+        input[type="color"] {
+            appearance: none;
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            background: none;
+            border: 0;
+            cursor: pointer;
+            height: 28px;
+            width: 44px;
+            padding: 0;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 0px 12px var(--picker-glow, rgba(0,0,0,0.3));
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
+        }
+        
+        input[type="color"]:hover { 
+            transform: scale(1.15) translateY(-2px); 
+            box-shadow: 0 4px 15px var(--picker-glow, rgba(0, 229, 255, 0.5)); 
+        }
+        input[type="color"]:active { 
+            transform: scale(0.9); 
+        }
+        ::-webkit-color-swatch-wrapper { padding: 0; }
+        ::-webkit-color-swatch { border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; }
+
+        /* Hidden File Input & Custom Label Button */
+        input[type="file"] { display: none; }
+        .file-upload-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            color: #ddd;
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+            flex-grow: 0;
+        }
+        .file-upload-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05) translateY(-2px);
+        }
+        .file-upload-btn:active {
+            transform: scale(0.92);
+        }
+
+        /* Action Row & Premium Buttons */
+        .action-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 0.5px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .button-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .button-wrapper::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 10px;
+            z-index: 1;
+            filter: blur(8px);
+            opacity: 0.6;
+            transition: opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.4s ease;
+        }
+
+        .button-wrapper:hover::before {
+            opacity: 1;
+            filter: blur(12px);
+        }
+
+        .button-wrapper.primary::before { background: linear-gradient(135deg, rgba(160, 10, 180, 1), rgba(10, 240, 255, 1)); }
+        .button-wrapper.secondary::before { background: linear-gradient(135deg, rgba(255, 170, 0, 1), rgba(255, 85, 0, 1)); opacity: 0.6; }
+        .button-wrapper.secondary:hover::before { filter: blur(12px); opacity: 1; }
+        .button-wrapper.tertiary::before { background: linear-gradient(135deg, rgba(10, 132, 255, 1), rgba(0, 229, 255, 1)); opacity: 0.6; }
+        .button-wrapper.tertiary:hover::before { filter: blur(12px); opacity: 1; }
+        .button-wrapper.quaternary::before { background: linear-gradient(135deg, rgba(52, 199, 89, 1), rgba(0, 255, 128, 1)); opacity: 0.6; }
+        .button-wrapper.quaternary:hover::before { filter: blur(12px); opacity: 1; }
+        
+        /* Demo Button Glow */
+        .button-wrapper.quinary::before { background: linear-gradient(135deg, rgba(255, 45, 85, 1), rgba(255, 100, 100, 1)); opacity: 0.6; }
+        .button-wrapper.quinary:hover::before { filter: blur(12px); opacity: 1; }
+
+        /* Camera Toggle Glow */
+        .button-wrapper.senary::before { background: linear-gradient(135deg, rgba(88, 86, 214, 1), rgba(175, 82, 222, 1)); opacity: 0.6; }
+        .button-wrapper.senary:hover::before { filter: blur(12px); opacity: 1; }
+
+        /* Switch Camera Glow */
+        .button-wrapper.septenary::before { background: linear-gradient(135deg, rgba(0, 150, 136, 1), rgba(0, 188, 212, 1)); opacity: 0.6; }
+        .button-wrapper.septenary:hover::before { filter: blur(12px); opacity: 1; }
+
+        /* Freeze Tracking Glow */
+        .button-wrapper.octonary::before { background: linear-gradient(135deg, rgba(255, 204, 0, 1), rgba(255, 149, 0, 1)); opacity: 0.6; }
+        .button-wrapper.octonary:hover::before { filter: blur(12px); opacity: 1; }
+
+        .settings-section button {
+            position: relative;
+            z-index: 2;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .settings-section button.primary-action {
+            background: linear-gradient(135deg, rgba(142, 1, 167, 0.8), rgba(0, 229, 255, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(142, 1, 167, 0.3);
+        }
+
+        .settings-section button.primary-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(0, 229, 255, 0.5);
+            background: linear-gradient(135deg, rgba(160, 10, 180, 0.9), rgba(10, 240, 255, 0.9));
+        }
+
+        .settings-section button.planet-action {
+            background: linear-gradient(135deg, rgba(255, 140, 0, 0.8), rgba(255, 60, 0, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 140, 0, 0.3);
+        }
+
+        .settings-section button.planet-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(255, 170, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 160, 10, 0.9), rgba(255, 80, 0, 0.9));
+        }
+
+        /* Premium Load Button */
+        .settings-section button.load-action {
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.8), rgba(0, 150, 255, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3);
+        }
+        .settings-section button.load-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(10, 132, 255, 0.5);
+            background: linear-gradient(135deg, rgba(20, 142, 255, 0.9), rgba(10, 160, 255, 0.9));
+        }
+
+        /* Premium Save Button */
+        .settings-section button.save-action {
+            background: linear-gradient(135deg, rgba(52, 199, 89, 0.8), rgba(0, 200, 100, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(52, 199, 89, 0.3);
+        }
+        .settings-section button.save-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(52, 199, 89, 0.5);
+            background: linear-gradient(135deg, rgba(62, 209, 99, 0.9), rgba(10, 210, 110, 0.9));
+        }
+
+        /* Premium Demo Button */
+        .settings-section button.demo-action {
+            background: linear-gradient(135deg, rgba(255, 45, 85, 0.8), rgba(255, 70, 100, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 45, 85, 0.3);
+        }
+        .settings-section button.demo-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(255, 45, 85, 0.5);
+            background: linear-gradient(135deg, rgba(255, 60, 100, 0.9), rgba(255, 90, 120, 0.9));
+        }
+        
+        .demo-active {
+            animation: pulse-glow 2s infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 10px rgba(255,45,85,0.4); }
+            50% { box-shadow: 0 0 25px rgba(255,45,85,0.8); }
+            100% { box-shadow: 0 0 10px rgba(255,45,85,0.4); }
+        }
+
+        /* Premium Camera Toggle Button */
+        .settings-section button.camera-action {
+            background: linear-gradient(135deg, rgba(88, 86, 214, 0.8), rgba(120, 80, 220, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(88, 86, 214, 0.3);
+        }
+        .settings-section button.camera-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(120, 80, 220, 0.5);
+            background: linear-gradient(135deg, rgba(98, 96, 224, 0.9), rgba(130, 90, 230, 0.9));
+        }
+
+        /* Premium Switch Camera Button */
+        .settings-section button.switch-cam-action {
+            background: linear-gradient(135deg, rgba(0, 150, 136, 0.8), rgba(0, 188, 212, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 150, 136, 0.3);
+        }
+        .settings-section button.switch-cam-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(0, 188, 212, 0.5);
+            background: linear-gradient(135deg, rgba(10, 160, 146, 0.9), rgba(10, 198, 222, 0.9));
+        }
+
+        /* Premium Freeze Tracking Button */
+        .settings-section button.freeze-action {
+            background: linear-gradient(135deg, rgba(255, 180, 0, 0.8), rgba(255, 140, 0, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 180, 0, 0.3);
+        }
+        .settings-section button.freeze-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(255, 180, 0, 0.5);
+            background: linear-gradient(135deg, rgba(255, 190, 10, 0.9), rgba(255, 150, 10, 0.9));
+        }
+        
+        .freeze-active {
+            animation: pulse-glow-yellow 2s infinite;
+        }
+        
+        @keyframes pulse-glow-yellow {
+            0% { box-shadow: 0 0 10px rgba(255, 180, 0, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(255, 180, 0, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(255, 180, 0, 0.4); }
+        }
+
+        /* Graphics Quality Glow */
+        .button-wrapper.nonary::before { background: linear-gradient(135deg, rgba(236, 72, 153, 1), rgba(219, 39, 119, 1)); opacity: 0.6; }
+        .button-wrapper.nonary:hover::before { filter: blur(12px); opacity: 1; }
+
+        /* Premium Graphics Quality Button */
+        .settings-section button.quality-action {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.8), rgba(219, 39, 119, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(219, 39, 119, 0.3);
+        }
+        .settings-section button.quality-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.5);
+            background: linear-gradient(135deg, rgba(244, 114, 182, 0.9), rgba(236, 72, 153, 0.9));
+        }
+
+        /* Zen Mode Glow */
+        .button-wrapper.denary::before { background: linear-gradient(135deg, rgba(200, 200, 205, 1), rgba(142, 142, 147, 1)); opacity: 0.6; }
+        .button-wrapper.denary:hover::before { filter: blur(12px); opacity: 1; }
+
+        /* Premium Zen Mode Button */
+        .settings-section button.zen-action {
+            background: linear-gradient(135deg, rgba(142, 142, 147, 0.8), rgba(99, 99, 102, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(99, 99, 102, 0.3);
+        }
+        .settings-section button.zen-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(142, 142, 147, 0.5);
+            background: linear-gradient(135deg, rgba(150, 150, 155, 0.9), rgba(110, 110, 115, 0.9));
+        }
+
+        /* Snapshot Glow */
+        .button-wrapper.undenary::before { background: linear-gradient(135deg, rgba(255, 107, 107, 1), rgba(255, 142, 83, 1)); opacity: 0.6; }
+        .button-wrapper.undenary:hover::before { filter: blur(12px); opacity: 1; }
+
+        /* Premium Snapshot Button */
+        .settings-section button.snapshot-action {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.8), rgba(255, 142, 83, 0.8));
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        .settings-section button.snapshot-action:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.5);
+            background: linear-gradient(135deg, rgba(255, 117, 117, 0.9), rgba(255, 152, 93, 0.9));
+        }
+
+        .settings-section button:active { transform: scale(0.92); }
+
+        /* Zen Mode Global Overrides */
+        body.zen-active #main-ui {
+            transform: translateX(-120%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        body.zen-active #ui-toggle {
+            transform: translateY(-50%) translateX(-120%) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        body.zen-active #fullscreen-btn {
+            transform: translateY(-20px) scale(0.8) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        body.zen-active #camera-preview {
+            transform: scaleX(-1) translateY(30px) scale(0.9) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Preset Buttons (Fallback) */
+        .settings-section button.preset-action {
+            background: rgba(255, 255, 255, 0.08);
+            color: #b0b5c0;
+            border: 0.5px solid rgba(255, 255, 255, 0.15);
+            width: 100%;
+        }
+        .settings-section button.preset-action:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        /* Footer Section */
+        .footer-section {
+            padding: 8px 16px;
+            text-align: center;
+            background: transparent;
+            border: none;
+        }
+        
+        .footer-section p {
+            margin: 4px 0;
+            font-size: 0.65rem;
+            color: #6c7380;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-section span {
+            color: #a0aaba;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        /* Camera Flash Overlay */
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        .flash-active {
+            opacity: 1 !important;
+            transition: opacity 0.05s ease-out !important;
+        }
+    </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils@0.6.1675466862/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    
+    <div id="flash-overlay"></div>
+
+    <div id="loading">
+        <div id="loading-title">Initializing Spatial Tracking...</div>
+        <span id="loading-sub">Please allow camera access</span>
+    </div>
+    
+    <!-- Left edge toggle button -->
+    <div id="ui-toggle" aria-label="Toggle UI Menu">
+        <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </div>
+
+    <!-- Premium Fullscreen Toggle Button -->
+    <button id="fullscreen-btn" aria-label="Toggle Fullscreen">
+        <svg class="icon-expand" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        <svg class="icon-compress" viewBox="0 0 24 24" style="display: none;"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>
+    </button>
+
+    <!-- Consolidated UI Layer -->
+    <div id="main-ui" class="mode-planet hidden-ui">
+        <!-- Instructions Panel -->
+        <div class="panel title-section">
+            <button id="pin-ui-btn" class="pin-btn" aria-label="Pin UI Panel" title="Pin Panel Open">
+                <svg viewBox="0 0 24 24"><path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/></svg>
+            </button>
+            <button id="close-ui-btn" class="close-btn" aria-label="Close UI">
+                <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+            </button>
+            <h1 id="mode-title" style="padding-left: 28px; padding-right: 28px; text-align: center;">Interstellar Mode</h1>
+            
+            <ul class="planet-only">
+                <li><span>🖐 🖐</span> Zoom & Rotate</li>
+                <li style="margin-top: 8px; color: var(--apple-text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Secret Trigger</li>
+                <li><span>✊ ✊</span> Unlock Neural Core</li>
+            </ul>
+
+            <ul class="brain-only">
+                <li><span>🖐</span> Reveal Logo 1</li>
+                <li><span>🖐+🤚</span> Reveal Logo 2</li>
+                <li><span>🫰</span> Heart Shape</li>
+                <li><span>1️⃣-3️⃣</span> Form Numbers</li>
+            </ul>
+        </div>
+
+        <!-- Persistent Settings Panel -->
+        <div class="panel settings-section">
+            <div class="control-group">
+                <label>1. Upload MMU Logo</label>
+                <label for="mmuUpload" class="file-upload-btn">Browse</label>
+                <input type="file" id="mmuUpload" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <label>2. Upload Mind Matters</label>
+                <label for="imageUpload" class="file-upload-btn">Browse</label>
+                <input type="file" id="imageUpload" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <label>3. Upload Brain Shape</label>
+                <label for="brainShapeUpload" class="file-upload-btn">Browse</label>
+                <input type="file" id="brainShapeUpload" accept="image/*">
+            </div>
+
+            <div class="control-group">
+                <label for="colorPicker">Neural Core Color</label>
+                <input type="color" id="colorPicker" value="#8e01a7">
+            </div>
+
+            <div class="control-group">
+                <label for="linkStartPicker">Link Origin Blend</label>
+                <input type="color" id="linkStartPicker" value="#e91e63">
+            </div>
+
+            <div class="control-group">
+                <label for="linkMiddlePicker">Link Middle Blend</label>
+                <input type="color" id="linkMiddlePicker" value="#800080">
+            </div>
+            
+            <div class="control-group">
+                <label for="linkEndPicker">Link Dest Blend</label>
+                <input type="color" id="linkEndPicker" value="#1976d2">
+            </div>
+
+            <!-- Mode Swap Controls (Moved Higher) -->
+            <div class="action-row" style="justify-content: space-between; gap: 12px;">
+                <div class="button-wrapper secondary" style="flex: 1;">
+                    <button id="resetButton" class="planet-action" style="width: 100%;">↺ Planet</button>
+                </div>
+                <div class="button-wrapper primary" style="flex: 1;">
+                    <button id="resetBrainButton" class="primary-action" style="width: 100%;">↻ Core</button>
+                </div>
+            </div>
+
+            <!-- Premium Save & Load Controls (Moved Lower) -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px; justify-content: space-between; gap: 12px;">
+                <div class="button-wrapper tertiary" style="flex: 1;">
+                    <button id="loadPresetBtn" class="load-action" style="width: 100%;">📂 Load</button>
+                </div>
+                <div class="button-wrapper quaternary" style="flex: 1;">
+                    <button id="savePresetBtn" class="save-action" style="width: 100%;">💾 Save</button>
+                </div>
+            </div>
+
+            <!-- Auto Pilot Demo Button -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper quinary" style="width: 100%;">
+                    <button id="demoBtn" class="demo-action" style="width: 100%;">▶ Auto Pilot</button>
+                </div>
+            </div>
+
+            <!-- Toggle Camera Preview Button -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper senary" style="width: 100%;">
+                    <button id="toggleCameraBtn" class="camera-action" style="width: 100%;">👁 Hide Camera PIP</button>
+                </div>
+            </div>
+
+            <!-- Switch Camera Button -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper septenary" style="width: 100%;">
+                    <button id="switchCameraBtn" class="switch-cam-action" style="width: 100%;">🔄 Switch Camera</button>
+                </div>
+            </div>
+
+            <!-- Freeze Tracking Button -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper octonary" style="width: 100%;">
+                    <button id="freezeTrackingBtn" class="freeze-action" style="width: 100%;">⏸ Freeze Tracking</button>
+                </div>
+            </div>
+
+            <!-- Graphics Quality Toggle -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper nonary" style="width: 100%;">
+                    <button id="qualityBtn" class="quality-action" style="width: 100%;">✨ Quality: Ultra</button>
+                </div>
+            </div>
+
+            <!-- Zen Mode Button -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper denary" style="width: 100%;">
+                    <button id="zenBtn" class="zen-action" style="width: 100%;">🧘 Zen Mode (Press H)</button>
+                </div>
+            </div>
+
+            <!-- Snapshot Button -->
+            <div class="action-row" style="border-top: none; padding-top: 0; margin-top: 10px;">
+                <div class="button-wrapper undenary" style="width: 100%;">
+                    <button id="snapshotBtn" class="snapshot-action" style="width: 100%;">📷 Capture Snapshot</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Panel -->
+        <div class="footer-section">
+            <p>[For MMU Mind Matter Gimmick Purpose Only]</p>
+            <p>Copyright © 2026 MMU Mind Matter.<br>All rights reserved.</p>
+            <p>All credit to <span>ENG YI JING</span></p>
+        </div>
+    </div>
+
+    <video id="input-video"></video>
+    
+    <div id="camera-preview" class="planet-mode">
+        <canvas id="camera-canvas"></canvas>
+    </div>
+
+    <div id="canvas-container"></div>
+    
+    <script type="module">
+        import * as THREE from 'three';
+
+        let APP_MODE = 'PLANET'; 
+        let transitionProgress = 0.0;
+        let mindMatterLocked = false; 
+        let mindMatterFrozen = false; // Hard freeze: once MIND_MATTER is reached, stop reading gestures entirely until reset
+        let demoModeActive = false; 
+        let brainGestureReadyAt = 0; 
+        const BRAIN_SETTLE_MS = 150; // Accelerated settling time
+        let linkRevealReadyAt = 0; 
+        const LINK_REVEAL_DELAY_MS = 400; 
+        let takeSnapshotFlag = false;
+
+        /* --- Gesture stability buffers (fixes "4" vs MMU_LOGO/MIND_MATTER misreads) --- */
+        // Drastically reduced history length for almost instantaneous recognition
+        const GESTURE_HISTORY_LEN = 2;
+        let handGestureHistory = {};
+        let thumbStateSticky = {};
+
+        const CONFIG = {
+            planetRadius: 40,
+            planetMinDist: 60,
+            planetMaxDist: 250,
+            particleCountCore: 3000,
+            particleCountSurface: 5000,
+            particleCountRing: 2000,
+            planetColor: 0xffaa00, 
+            surfaceColor: 0xff5500, 
+            ringColor: 0x00e5ff, 
+            
+            particleCount: 50000,
+            brainRadius: 23, 
+            scatterRadius: 60,
+            baseColor: new THREE.Color("rgb(142, 1, 167)"), 
+            minCameraDist: 38,
+            maxCameraDist: 100, 
+            defaultCameraDist: 68,
+            zoomInFactor: 0.08,
+            autoFrameFactor: 0.18,
+            minBrainScale: 0.3,
+            maxBrainScale: 2.5
+        };
+
+        const planetState = {
+            targetAngle: 0, currentAngle: 0,
+            targetRadius: 150, currentRadius: 150
+        };
+
+        const STATES = { BRAIN: 0, NUM1: 1, NUM2: 2, NUM3: 3, NUM4: 4 };
+        const brainState = {
+            targetShape: STATES.BRAIN,
+            shapeWeights: [1, 0, 0, 0, 0], 
+            scatterAmount: 0, targetScatter: 0,
+            mmuMixAmount: 0, targetMmuMix: 0,
+            rotationZ: 0, targetRotationZ: 0,
+            rotationY: 0,
+            handDetected: false,
+            gesture: 'IDLE',
+            handX: 0.5,
+            cameraRadius: 60,
+            targetScale: 1.0, currentScale: 1.0,
+            mindMatterActive: false, prevMindMatterActive: false,
+            targetMindMatterRotY: 0,
+            linkRevealAmount: 1, targetLinkReveal: 1,
+            heartMixAmount: 0, targetHeartMix: 0,
+            pendingSpecialGesture: null,
+            specialGestureStartTime: 0
+        };
+
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x030303, 0.004); 
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, planetState.currentRadius);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        function createParticleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.5)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 32, 32);
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+        const particleTexture = createParticleTexture();
+
+        const planetGroup = new THREE.Group();
+        scene.add(planetGroup);
+
+        const coreGeo = new THREE.BufferGeometry();
+        const corePos = [];
+        for(let i=0; i<CONFIG.particleCountCore; i++) {
+            const r = Math.random() * CONFIG.planetRadius;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            corePos.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+        }
+        coreGeo.setAttribute('position', new THREE.Float32BufferAttribute(corePos, 3));
+        const coreMat = new THREE.PointsMaterial({
+            color: CONFIG.planetColor, size: 4.5, map: particleTexture, transparent: true, opacity: 1.0, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const coreParticles = new THREE.Points(coreGeo, coreMat);
+        planetGroup.add(coreParticles);
+
+        const surfaceGeo = new THREE.BufferGeometry();
+        const surfacePos = [];
+        for(let i=0; i<CONFIG.particleCountSurface; i++) {
+            const r = CONFIG.planetRadius + (Math.random() * 2); 
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            surfacePos.push(r * Math.sin(phi) * Math.cos(theta), r * Math.sin(phi) * Math.sin(theta), r * Math.cos(phi));
+        }
+        surfaceGeo.setAttribute('position', new THREE.Float32BufferAttribute(surfacePos, 3));
+        const surfaceMat = new THREE.PointsMaterial({
+            color: CONFIG.surfaceColor, size: 2.5, map: particleTexture, transparent: true, opacity: 1.0, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+        const surfaceParticles = new THREE.Points(surfaceGeo, surfaceMat);
+        planetGroup.add(surfaceParticles);
+
+        function createRing(radiusInner, radiusOuter, count, tiltX, tiltZ) {
+            const geo = new THREE.BufferGeometry();
+            const pos = [];
+            for(let i=0; i<count; i++) {
+                const r = radiusInner + Math.random() * (radiusOuter - radiusInner);
+                const theta = Math.random() * Math.PI * 2;
+                pos.push(r * Math.cos(theta), (Math.random() - 0.5) * 2, r * Math.sin(theta));
+            }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            const mat = new THREE.PointsMaterial({
+                color: CONFIG.ringColor, size: 2.0, map: particleTexture, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
+            });
+            const mesh = new THREE.Points(geo, mat);
+            mesh.rotation.set(tiltX, 0, tiltZ);
+            return mesh;
+        }
+        const ring1 = createRing(60, 90, 1500, Math.PI / 8, Math.PI / 12);
+        const ring2 = createRing(65, 100, 1500, -Math.PI / 6, -Math.PI / 10);
+        planetGroup.add(ring1, ring2);
+
+        const brainGroup = new THREE.Group();
+        brainGroup.visible = false; 
+        scene.add(brainGroup);
+
+        const linkGroup = new THREE.Group();
+        brainGroup.add(linkGroup);
+
+        function generateBrainPositions(count) {
+            const pos = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            let i = 0;
+            while(i < count) {
+                let x = (Math.random() - 0.5) * 2.0; let y = (Math.random() - 0.5) * 2.0; let z = (Math.random() - 0.5) * 2.0;
+                let len = Math.sqrt(x*x + y*y + z*z);
+                if (len === 0 || len > 1.0) continue;
+                x /= len; y /= len; z /= len;
+
+                let shellR = 0.86 + Math.random() * 0.14;
+                let bx = x * 0.85 * shellR; let by = y * 0.75 * shellR; let bz = z * 1.1 * shellR;
+
+                let fold = Math.sin(bx * 25) * Math.sin(by * 25) * Math.sin(bz * 25);
+                let foldDisp = fold * 0.02;
+                bx += foldDisp; by += foldDisp; bz += foldDisp;
+
+                const gap = 0.06;
+                if (bx > 0) bx += gap; else bx -= gap;
+                if (bz > 0) bx *= (1.0 - bz * 0.3);
+                pos[i*3] = bx * CONFIG.brainRadius; pos[i*3 + 1] = by * CONFIG.brainRadius; pos[i*3 + 2] = bz * CONFIG.brainRadius;
+                colors[i*3] = 0.5 + bx * 0.5; colors[i*3 + 1] = 0.5 + by * 0.5; colors[i*3 + 2] = 0.5 + bz * 0.5;
+                i++;
+            }
+            return { positions: pos, colors: colors };
+        }
+
+        function generateScatterPositions(count) {
+            const pos = new Float32Array(count * 3);
+            for(let i=0; i<count; i++) {
+                let u = Math.random(); let v = Math.random();
+                let theta = u * 2.0 * Math.PI; let phi = Math.acos(2.0 * v - 1.0);
+                let r = Math.cbrt(Math.random()) * CONFIG.scatterRadius + 10; 
+                pos[i*3] = r * Math.sin(phi) * Math.cos(theta); pos[i*3 + 1] = r * Math.sin(phi) * Math.sin(theta); pos[i*3 + 2] = r * Math.cos(phi);
+            }
+            return pos;
+        }
+
+        const NUM_SCALE = 1.5; 
+        const DIGIT_NOISE = 2.8;
+        function generateNumPositions(count, logic) {
+            const pos = new Float32Array(count * 3);
+            for(let i=0; i<count; i++) {
+                let t = Math.random();
+                let {x, y} = logic(t);
+                pos[i*3] = (x * NUM_SCALE) + (Math.random()-0.5)*DIGIT_NOISE;
+                pos[i*3 + 1] = (y * NUM_SCALE) + (Math.random()-0.5)*DIGIT_NOISE;
+                pos[i*3 + 2] = (Math.random()-0.5)*DIGIT_NOISE;
+            }
+            return pos;
+        }
+
+        function generateHeartPositions(count) {
+            const pos = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+            const heartScale = CONFIG.brainRadius * 0.9;
+
+            let i = 0;
+            while (i < count) {
+                let x = (Math.random() - 0.5) * 3.0; 
+                let y = (Math.random() - 0.5) * 3.0; 
+                let z = (Math.random() - 0.5) * 3.0; 
+
+                let zSq = z * z;
+                let xSq = x * x;
+                let ySq = y * y;
+                let yCube = ySq * y;
+
+                let term1 = xSq + 1.8 * zSq + ySq - 1.0;
+                let val = (term1 * term1 * term1) - (xSq * yCube) - (0.1 * zSq * yCube);
+
+                if (val <= 0.0) {
+                    let isSurface = (val > -0.2); 
+                    let accept = isSurface ? true : (Math.random() < 0.1); 
+                    
+                    if (accept) {
+                        pos[i*3]   = x * heartScale;
+                        pos[i*3+1] = y * heartScale;
+                        pos[i*3+2] = z * heartScale;
+
+                        let zNorm = Math.max(0, Math.min(1, (z + 0.6) / 1.2));
+                        
+                        colors[i*3]   = 0.8 + zNorm * 0.2;       
+                        colors[i*3+1] = zNorm * 0.15;            
+                        colors[i*3+2] = 0.05 + zNorm * 0.2;      
+
+                        i++;
+                    }
+                }
+            }
+            return { positions: pos, colors: colors };
+        }
+        
+        const brainData = generateBrainPositions(CONFIG.particleCount);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(brainData.positions, 3));
+        geometry.setAttribute('a_color', new THREE.BufferAttribute(brainData.colors, 3));
+        geometry.setAttribute('a_scatter', new THREE.BufferAttribute(generateScatterPositions(CONFIG.particleCount), 3));
+        
+        geometry.setAttribute('a_num1', new THREE.BufferAttribute(generateNumPositions(CONFIG.particleCount, (t) => {
+            if (t < 0.12) return {x: -3.5 + (t/0.12)*3.5, y: 10 + (t/0.12)*4};
+            else if (t < 0.78) return {x: 0, y: 14 - ((t-0.12)/0.66)*28};
+            else return {x: -5 + ((t-0.78)/0.22)*10, y: -14};
+        }), 3));
+        geometry.setAttribute('a_num2', new THREE.BufferAttribute(generateNumPositions(CONFIG.particleCount, (t) => {
+            if (t < 0.4) { let a = Math.PI * 1.2 - (t/0.4) * Math.PI * 1.4; return {x: Math.cos(a)*7, y: Math.sin(a)*7+7}; }
+            else if (t < 0.8) { let nt = (t-0.4)/0.4; return {x: Math.cos(-0.2*Math.PI)*7*(1-nt) - 7*nt, y: (Math.sin(-0.2*Math.PI)*7+7)*(1-nt) - 14*nt}; }
+            else return {x: -7 + ((t-0.8)/0.2)*14, y: -14};
+        }), 3));
+        geometry.setAttribute('a_num3', new THREE.BufferAttribute(generateNumPositions(CONFIG.particleCount, (t) => {
+            let x, y;
+            if (t < 0.5) { let a = Math.PI * 0.9 - (t/0.5) * Math.PI * 1.4; x = Math.cos(a)*6.5; y = Math.sin(a)*6.5+7; }
+            else { let a = Math.PI * 0.5 - ((t-0.5)/0.5) * Math.PI * 1.4; x = Math.cos(a)*7.5; y = Math.sin(a)*7.5-6.5; }
+            return {x: x-1.5, y: y};
+        }), 3));
+        geometry.setAttribute('a_num4', new THREE.BufferAttribute(generateNumPositions(CONFIG.particleCount, (t) => {
+            let x, y;
+            if (t < 0.44) { x = 4; y = 14 - (t/0.44)*28; }
+            else if (t < 0.75) { let nt = (t-0.44)/0.31; x = 4 - nt*12; y = 14 - nt*16; }
+            else { x = -8.5 + ((t-0.75)/0.25)*15.5; y = -2; }
+            return {x: x-1.5, y: y};
+        }), 3));
+
+        const rData = new Float32Array(CONFIG.particleCount);
+        for(let i=0; i<CONFIG.particleCount; i++) rData[i] = Math.random();
+        geometry.setAttribute('a_random', new THREE.BufferAttribute(rData, 1));
+        
+        const initialLogoColors = new Float32Array(CONFIG.particleCount * 3);
+        for(let i=0; i<initialLogoColors.length; i++) initialLogoColors[i] = brainData.colors[i];
+        geometry.setAttribute('a_logoColor', new THREE.BufferAttribute(initialLogoColors, 3));
+        
+        const mmuScatterData = generateScatterPositions(CONFIG.particleCount);
+        geometry.setAttribute('a_mmuScatter', new THREE.BufferAttribute(mmuScatterData, 3));
+        const mmuColorData = new Float32Array(CONFIG.particleCount * 3);
+        for(let i=0; i<mmuColorData.length; i++) mmuColorData[i] = initialLogoColors[i] * 0.5;
+        geometry.setAttribute('a_mmuColor', new THREE.BufferAttribute(mmuColorData, 3));
+
+        const mmStarMaskData = new Float32Array(CONFIG.particleCount); 
+        geometry.setAttribute('a_mmStarMask', new THREE.BufferAttribute(mmStarMaskData, 1));
+
+        const heartData = generateHeartPositions(CONFIG.particleCount);
+        geometry.setAttribute('a_heartShape', new THREE.BufferAttribute(heartData.positions, 3));
+        geometry.setAttribute('a_heartColor', new THREE.BufferAttribute(heartData.colors, 3));
+        
+        function processImageToParticles(imageSrc, isMMU = false) {
+            const logoImg = new Image();
+            logoImg.crossOrigin = "Anonymous"; 
+            logoImg.onload = () => {
+                const cvs = document.createElement('canvas');
+                const ctx = cvs.getContext('2d', { willReadFrequently: true });
+                cvs.width = 600; cvs.height = Math.floor(600 * (logoImg.height / logoImg.width));
+                ctx.drawImage(logoImg, 0, 0, cvs.width, cvs.height);
+                if (imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc);
+                try {
+                    const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
+                    const validPixels = [];
+                    const bgR = imgData[0], bgG = imgData[1], bgB = imgData[2], bgA = imgData[3];
+                    const isBrightBg = (bgA > 250 && bgR > 240 && bgG > 240 && bgB > 240);
+
+                    for (let y = 0; y < cvs.height; y+=2) {
+                        for (let x = 0; x < cvs.width; x+=2) {
+                            const idx = (y * cvs.width + x) * 4;
+                            const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
+                            if (a > 20 && !(isBrightBg && r > 240 && g > 240 && b > 240)) {
+                                validPixels.push({ x, y, r: r/255, g: g/255, b: b/255 });
+                            }
+                        }
+                    }
+                    
+                    if (validPixels.length > 0) {
+                        const colorAttr = isMMU ? geometry.attributes.a_mmuColor : geometry.attributes.a_logoColor;
+                        const realScatterAttr = isMMU ? geometry.attributes.a_mmuScatter : geometry.attributes.a_scatter;
+                        const starMaskAttr = geometry.attributes.a_mmStarMask; 
+                        const imgParticleCount = Math.floor(CONFIG.particleCount * (isMMU ? 0.75 : 0.60));
+                        const jitterAmt = isMMU ? 0.05 : 0.01;
+                        
+                        for (let i = 0; i < CONFIG.particleCount; i++) {
+                            if (i < imgParticleCount) {
+                                const p = validPixels[Math.floor(Math.random() * validPixels.length)];
+                                const scale = 45 / cvs.width; 
+                                let zPos = 0, colorMult = 1.0; 
+                                
+                                if (isMMU) {
+                                    zPos = (Math.random() - 0.5) * 0.02; 
+                                    colorMult = 1.0; 
+                                } else {
+                                    let depth = 2.0;
+                                    const zRand = Math.random();
+                                    if (zRand < 0.60) { zPos = (Math.random() - 0.5) * 0.08; colorMult = 0.85; }
+                                    else if (zRand < 0.80) { zPos = -depth + (Math.random() - 0.5) * 0.2; colorMult = 0.35; }
+                                    else { zPos = -Math.random() * depth; colorMult = 0.3 + 0.55 * (1.0 - (Math.abs(zPos) / depth)); }
+                                }
+                                
+                                realScatterAttr.array[i*3] = (p.x - cvs.width/2) * scale + (Math.random()-0.5)*jitterAmt;
+                                realScatterAttr.array[i*3+1] = -(p.y - cvs.height/2) * scale + (Math.random()-0.5)*jitterAmt; 
+                                realScatterAttr.array[i*3+2] = zPos;
+                                colorAttr.array[i*3] = p.r * colorMult; colorAttr.array[i*3+1] = p.g * colorMult; colorAttr.array[i*3+2] = p.b * colorMult;
+                                if (!isMMU) starMaskAttr.array[i] = 1.0; 
+                            } else {
+                                let u = Math.random(), v = Math.random();
+                                let theta = u * 2.0 * Math.PI, phi = Math.acos(2.0 * v - 1.0);
+                                let r = Math.cbrt(Math.random()) * (CONFIG.scatterRadius * 1.5) + 20; 
+                                realScatterAttr.array[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                                realScatterAttr.array[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                                realScatterAttr.array[i*3+2] = r * Math.cos(phi) - 15.0; 
+                                
+                                colorAttr.array[i*3] = initialLogoColors[i*3] * 0.5;
+                                colorAttr.array[i*3+1] = initialLogoColors[i*3+1] * 0.5;
+                                colorAttr.array[i*3+2] = initialLogoColors[i*3+2] * 0.5;
+                                if (!isMMU) starMaskAttr.array[i] = 0.0; 
+                            }
+                        }
+                        realScatterAttr.needsUpdate = true; colorAttr.needsUpdate = true;
+                        if (!isMMU) starMaskAttr.needsUpdate = true;
+                        
+                        if (isMMU) {
+                            brainMaterial.uniforms.u_mmuLoaded.value = 1.0;
+                        } else {
+                            brainMaterial.uniforms.u_imageLoaded.value = 1.0;
+                        }
+                    }
+                } catch (e) { console.error("CORS Error", e); }
+            };
+            logoImg.src = imageSrc;
+        }
+
+        function processImageToBrainShape(imageSrc) {
+            const logoImg = new Image();
+            logoImg.crossOrigin = "Anonymous";
+            logoImg.onload = () => {
+                const cvs = document.createElement('canvas');
+                const ctx = cvs.getContext('2d', { willReadFrequently: true });
+                cvs.width = 300; cvs.height = Math.floor(300 * (logoImg.height / logoImg.width));
+                ctx.drawImage(logoImg, 0, 0, cvs.width, cvs.height);
+                if (imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc);
+                try {
+                    const imgData = ctx.getImageData(0, 0, cvs.width, cvs.height).data;
+                    const validPixels = [];
+                    const bgR = imgData[0], bgG = imgData[1], bgB = imgData[2], bgA = imgData[3];
+                    const isBrightBg = (bgA > 250 && bgR > 240 && bgG > 240 && bgB > 240);
+
+                    for (let y = 0; y < cvs.height; y++) {
+                        for (let x = 0; x < cvs.width; x++) {
+                            const idx = (y * cvs.width + x) * 4;
+                            const r = imgData[idx], g = imgData[idx+1], b = imgData[idx+2], a = imgData[idx+3];
+                            if (a > 20 && !(isBrightBg && r > 240 && g > 240 && b > 240)) {
+                                validPixels.push({ x, y, r: r/255, g: g/255, b: b/255 });
+                            }
+                        }
+                    }
+
+                    if (validPixels.length > 0) {
+                        const posAttr = geometry.attributes.position;
+                        const colorAttr = geometry.attributes.a_color;
+                        const maxSpan = Math.max(cvs.width, cvs.height);
+                        const scale = (CONFIG.brainRadius * 1.9) / maxSpan;
+                        const depthAmount = CONFIG.brainRadius * 0.55; 
+
+                        for (let i = 0; i < CONFIG.particleCount; i++) {
+                            const p = validPixels[Math.floor(Math.random() * validPixels.length)];
+                            const nx = (p.x - cvs.width / 2) * scale;
+                            const ny = -(p.y - cvs.height / 2) * scale;
+
+                            const distNorm = Math.min(1.0, Math.hypot(nx, ny) / (CONFIG.brainRadius * 1.1));
+                            const depthFactor = Math.sqrt(Math.max(0.0, 1.0 - distNorm * distNorm));
+                            const nz = (Math.random() - 0.5) * depthAmount * depthFactor;
+
+                            posAttr.array[i*3] = nx;
+                            posAttr.array[i*3 + 1] = ny;
+                            posAttr.array[i*3 + 2] = nz;
+
+                            colorAttr.array[i*3] = p.r; colorAttr.array[i*3 + 1] = p.g; colorAttr.array[i*3 + 2] = p.b;
+                        }
+                        posAttr.needsUpdate = true;
+                        colorAttr.needsUpdate = true;
+
+                        rebuildBrainNetworkLines(); 
+                    }
+                } catch (e) { console.error("CORS Error", e); }
+            };
+            logoImg.src = imageSrc;
+        }
+        
+        let networkLines = null;
+        let nodeParticles = null;
+        
+        const linkStartColor = new THREE.Color("rgb(233, 30, 99)");
+        const linkMiddleColor = new THREE.Color("rgb(128, 0, 128)");
+        const linkEndColor = new THREE.Color("rgb(25, 118, 210)");
+        
+        const LINK_BASE_OPACITY = 1.0;
+        const NODE_BASE_OPACITY = 0.4; 
+
+        const nodeMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                u_time: { value: 0 },
+                u_opacity: { value: 1.0 }
+            },
+            vertexShader: `
+                uniform float u_time;
+                attribute float a_size;
+                attribute float a_bright;
+                attribute float a_rand;
+                attribute vec3 a_color;
+                varying float v_bright;
+                varying vec3 v_color;
+                void main() {
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    float twinkle = 0.8 + 0.2 * sin(u_time * 2.5 + a_rand * 30.0);
+                    gl_PointSize = a_size * twinkle * (70.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                    v_bright = a_bright * twinkle;
+                    v_color = a_color;
+                }
+            `,
+            fragmentShader: `
+                uniform float u_opacity;
+                varying float v_bright;
+                varying vec3 v_color;
+                void main() {
+                    vec2 uv = gl_PointCoord - 0.5;
+                    float d = length(uv);
+                    if (d > 0.5) discard;
+                    float glow = smoothstep(0.5, 0.0, d);
+                    float flareX = smoothstep(0.07, 0.0, abs(uv.y)) * smoothstep(0.5, 0.0, abs(uv.x));
+                    float flareY = smoothstep(0.07, 0.0, abs(uv.x)) * smoothstep(0.5, 0.0, abs(uv.y));
+                    float flare = max(flareX, flareY) * smoothstep(0.55, 1.0, v_bright);
+                    float alpha = (glow * 0.75 + flare) * v_bright * u_opacity;
+                    gl_FragColor = vec4(v_color, alpha);
+                }
+            `,
+            transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+
+        function depthFactorFromZ(z, floor = 0.25) {
+            const t = z / CONFIG.brainRadius;
+            return Math.min(1.0, Math.max(floor, 0.6 + 0.4 * t));
+        }
+
+        const LINK_BRIGHTNESS_BOOST = 4.5; 
+        const LINK_DEPTH_FLOOR = 0.85; 
+
+        function getGradientColor(yPos, depth, brightnessBoost = 1.0) {
+            let t = (yPos / CONFIG.brainRadius) * 0.5 + 0.5;
+            t = Math.max(0, Math.min(1, t)); 
+            
+            const c = new THREE.Color();
+            if (t < 0.5) {
+                c.lerpColors(linkStartColor, linkMiddleColor, t * 2.0);
+            } else {
+                c.lerpColors(linkMiddleColor, linkEndColor, (t - 0.5) * 2.0);
+            }
+            c.multiplyScalar(depth * brightnessBoost); 
+            return c;
+        }
+
+        function rebuildBrainNetworkLines() {
+            const posArray = geometry.attributes.position.array;
+            const totalCount = CONFIG.particleCount;
+            const nodeCount = 340; 
+            const step = Math.max(1, Math.floor(totalCount / nodeCount));
+            const nodes = [];
+            for (let i = 0; i < totalCount && nodes.length < nodeCount; i += step) {
+                nodes.push([posArray[i*3], posArray[i*3+1], posArray[i*3+2]]);
+            }
+
+            const maxDist = CONFIG.brainRadius * 0.4;
+            const linePositions = [];
+            const lineColors = [];
+            for (let a = 0; a < nodes.length; a++) {
+                const neighbors = [];
+                for (let b = 0; b < nodes.length; b++) {
+                    if (a === b) continue;
+                    const dx = nodes[a][0]-nodes[b][0], dy = nodes[a][1]-nodes[b][1], dz = nodes[a][2]-nodes[b][2];
+                    const d = Math.sqrt(dx*dx + dy*dy + dz*dz);
+                    if (d < maxDist) neighbors.push({ b, d });
+                }
+                neighbors.sort((x, y) => x.d - y.d);
+                const linkCount = Math.min(4, neighbors.length);
+                for (let k = 0; k < linkCount; k++) {
+                    const b = neighbors[k].b;
+                    if (b > a) {
+                        const nodeA = nodes[a], nodeB = nodes[b];
+                        linePositions.push(nodeA[0], nodeA[1], nodeA[2], nodeB[0], nodeB[1], nodeB[2]);
+                        
+                        const depthA = depthFactorFromZ(nodeA[2], LINK_DEPTH_FLOOR);
+                        const depthB = depthFactorFromZ(nodeB[2], LINK_DEPTH_FLOOR);
+                        const colorA = getGradientColor(nodeA[1], depthA, LINK_BRIGHTNESS_BOOST);
+                        const colorB = getGradientColor(nodeB[1], depthB, LINK_BRIGHTNESS_BOOST);
+                        
+                        lineColors.push(colorA.r, colorA.g, colorA.b, colorB.r, colorB.g, colorB.b);
+                    }
+                }
+            }
+
+            if (networkLines) {
+                linkGroup.remove(networkLines);
+                networkLines.geometry.dispose();
+                networkLines.material.dispose();
+            }
+
+            const lineGeo = new THREE.BufferGeometry();
+            lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+            lineGeo.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+            const lineMat = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                transparent: true,
+                opacity: LINK_BASE_OPACITY,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            networkLines = new THREE.LineSegments(lineGeo, lineMat);
+            linkGroup.add(networkLines);
+
+            if (nodeParticles) {
+                linkGroup.remove(nodeParticles);
+                nodeParticles.geometry.dispose();
+            }
+            
+            const nodePos = [];
+            const nodeSize = [];
+            const nodeBright = [];
+            const nodeRand = [];
+            const nodeColorArray = [];
+            
+            for (let n = 0; n < nodes.length; n++) {
+                const [nx, ny, nz] = nodes[n];
+                nodePos.push(nx, ny, nz);
+                const depth = depthFactorFromZ(nz);
+                const isHub = Math.random() < 0.16;
+                nodeSize.push(isHub ? (14 + Math.random() * 10) : (3 + Math.random() * 5));
+                nodeBright.push((isHub ? (0.75 + Math.random() * 0.25) : (0.15 + Math.random() * 0.35)) * depth);
+                nodeRand.push(Math.random());
+                
+                const c = getGradientColor(ny, depth);
+                nodeColorArray.push(c.r, c.g, c.b);
+            }
+            const nodeGeo = new THREE.BufferGeometry();
+            nodeGeo.setAttribute('position', new THREE.Float32BufferAttribute(nodePos, 3));
+            nodeGeo.setAttribute('a_size', new THREE.Float32BufferAttribute(nodeSize, 1));
+            nodeGeo.setAttribute('a_bright', new THREE.Float32BufferAttribute(nodeBright, 1));
+            nodeGeo.setAttribute('a_rand', new THREE.Float32BufferAttribute(nodeRand, 1));
+            nodeGeo.setAttribute('a_color', new THREE.Float32BufferAttribute(nodeColorArray, 3));
+            
+            nodeParticles = new THREE.Points(nodeGeo, nodeMaterial);
+            linkGroup.add(nodeParticles);
+        }
+        
+        function updateNetworkColors() {
+            if (!networkLines || !nodeParticles) return;
+            
+            const linePositions = networkLines.geometry.attributes.position.array;
+            const lineColors = networkLines.geometry.attributes.color.array;
+            for(let i=0; i<linePositions.length; i+=3) {
+                const y = linePositions[i+1];
+                const z = linePositions[i+2];
+                const c = getGradientColor(y, depthFactorFromZ(z, LINK_DEPTH_FLOOR), LINK_BRIGHTNESS_BOOST);
+                lineColors[i] = c.r; lineColors[i+1] = c.g; lineColors[i+2] = c.b;
+            }
+            networkLines.geometry.attributes.color.needsUpdate = true;
+            
+            const nodePositions = nodeParticles.geometry.attributes.position.array;
+            const nodeColors = nodeParticles.geometry.attributes.a_color.array;
+            for(let i=0; i<nodePositions.length; i+=3) {
+                const y = nodePositions[i+1];
+                const z = nodePositions[i+2];
+                const c = getGradientColor(y, depthFactorFromZ(z));
+                nodeColors[i] = c.r; nodeColors[i+1] = c.g; nodeColors[i+2] = c.b;
+            }
+            nodeParticles.geometry.attributes.a_color.needsUpdate = true;
+        }
+
+        const brainMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                u_time: { value: 0 },
+                u_baseColor: { value: CONFIG.baseColor },
+                u_shapeWeights: { value: [1, 0, 0, 0, 0] }, 
+                u_scatterMix: { value: 0 }, 
+                u_mmuMix: { value: 0 }, 
+                u_imageLoaded: { value: 0.0 },
+                u_mmuLoaded: { value: 0.0 },
+                u_brightness: { value: 1.0 },
+                u_alphaScale: { value: 1.0 },
+                u_logoDim: { value: 0.75 }, 
+                u_logoPointScale: { value: 0.35 },
+                u_heartMix: { value: 0 }
+            },
+            vertexShader: `
+                uniform float u_time; 
+                uniform float u_shapeWeights[5]; 
+                uniform float u_scatterMix; 
+                uniform float u_mmuMix;
+                uniform float u_heartMix;
+                uniform float u_imageLoaded;
+                uniform float u_mmuLoaded;
+                uniform float u_logoDim;
+                uniform float u_logoPointScale;
+                
+                attribute vec3 a_color; 
+                attribute vec3 a_scatter; 
+                attribute vec3 a_logoColor;
+                attribute vec3 a_mmuScatter;
+                attribute vec3 a_mmuColor;
+                attribute float a_mmStarMask;
+                attribute vec3 a_heartShape;
+                attribute vec3 a_heartColor;
+                
+                attribute vec3 a_num1; attribute vec3 a_num2; attribute vec3 a_num3; attribute vec3 a_num4; 
+                attribute float a_random;
+                
+                varying vec3 v_color; varying float v_alpha; varying float v_starMask;
+                
+                void main() {
+                    vec3 targetPos = position * u_shapeWeights[0] + 
+                                     a_num1 * u_shapeWeights[1] + 
+                                     a_num2 * u_shapeWeights[2] + 
+                                     a_num3 * u_shapeWeights[3] + 
+                                     a_num4 * u_shapeWeights[4]; 
+                                     
+                    targetPos = mix(targetPos, a_scatter, u_scatterMix);
+                    targetPos = mix(targetPos, a_mmuScatter, u_mmuMix);
+                    targetPos = mix(targetPos, a_heartShape, u_heartMix);
+                    
+                    vec3 targetColor = mix(a_color, a_logoColor, u_scatterMix * u_imageLoaded);
+                    targetColor = mix(targetColor, a_mmuColor, u_mmuMix * u_mmuLoaded);
+                    targetColor = mix(targetColor, a_heartColor, u_heartMix);
+                    
+                    float breath = sin(u_time * 2.0 + a_random * 6.2831) * 0.5 * (1.0 - max(u_scatterMix, max(u_mmuMix, u_heartMix)));
+                    targetPos += normalize(targetPos + vec3(0.001)) * breath;
+                    
+                    vec4 mvPosition = modelViewMatrix * vec4(targetPos, 1.0);
+                    float sizeFlicker = (0.5 + 0.5 * sin(u_time * 8.0 + a_random * 20.0));
+                    
+                    float logoActive = u_scatterMix * u_imageLoaded;
+                    float imageShrink = mix(1.0, u_logoPointScale, a_mmStarMask);
+                    float pointScale = mix(1.0, imageShrink, logoActive);
+                    gl_PointSize = (30.0 * a_random + 10.0 + sizeFlicker * 5.0) * (20.0 / -mvPosition.z) * pointScale;
+                    gl_Position = projectionMatrix * mvPosition;
+                    v_color = targetColor; v_alpha = 0.6 + 0.4 * sin(u_time * 4.0 + a_random * 10.0);
+                    v_starMask = a_mmStarMask;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 u_baseColor; 
+                uniform float u_scatterMix; 
+                uniform float u_mmuMix;
+                uniform float u_heartMix;
+                uniform float u_imageLoaded; 
+                uniform float u_mmuLoaded; 
+                uniform float u_brightness;
+                uniform float u_alphaScale;
+                uniform float u_logoDim;
+                
+                varying vec3 v_color; varying float v_alpha; varying float v_starMask;
+                void main() {
+                    vec2 coord = gl_PointCoord * 2.0 - 1.0;
+                    float dist = dot(coord, coord);
+                    if (dist > 1.0) discard; 
+                    float alpha = exp(-dist * 3.0) * v_alpha * u_alphaScale;
+                    
+                    float colorMixFactor = clamp((u_scatterMix * u_imageLoaded) + (u_mmuMix * u_mmuLoaded) + u_heartMix, 0.0, 1.0);
+                    vec3 finalColor = mix(u_baseColor, v_color, colorMixFactor);
+                    finalColor *= mix(1.3, 1.0, max(u_scatterMix, max(u_mmuMix, u_heartMix))) * u_brightness;
+                    
+                    float logoActive = u_scatterMix * u_imageLoaded;
+                    float imageDim = mix(1.0, u_logoDim, v_starMask);
+                    finalColor *= mix(1.0, imageDim, logoActive);
+                    
+                    gl_FragColor = vec4(finalColor, alpha);
+                }
+            `,
+            transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
+        });
+
+        const brainParticles = new THREE.Points(geometry, brainMaterial);
+        brainGroup.add(brainParticles);
+
+        rebuildBrainNetworkLines(); 
+
+        const videoElement = document.getElementById('input-video');
+        const cameraCanvas = document.getElementById('camera-canvas');
+        const cameraCtx = cameraCanvas.getContext('2d');
+        const loadingDiv = document.getElementById('loading');
+
+        function calcDist(lm1, lm2) {
+            return Math.hypot(lm1.x - lm2.x, lm1.y - lm2.y);
+        }
+
+        function getExtendedCount(landmarks) {
+            const wrist = landmarks[0];
+            const palmSize = calcDist(wrist, landmarks[9]);
+            
+            const isIndexExt = calcDist(landmarks[8], wrist) > calcDist(landmarks[6], wrist) * 1.05;
+            const isMiddleExt = calcDist(landmarks[12], wrist) > calcDist(landmarks[10], wrist) * 1.05;
+            const isRingExt = calcDist(landmarks[16], wrist) > calcDist(landmarks[14], wrist) * 1.05;
+            const isPinkyExt = calcDist(landmarks[20], wrist) > calcDist(landmarks[18], wrist) * 1.05;
+            let ext = (isIndexExt?1:0) + (isMiddleExt?1:0) + (isRingExt?1:0) + (isPinkyExt?1:0);
+            
+            if (calcDist(landmarks[4], landmarks[17]) > palmSize * 1.2) ext++;
+            return ext;
+        }
+
+        function getCrossProduct(lm) {
+            const wrist = lm[0];
+            const index = lm[5];
+            const pinky = lm[17];
+            return ((index.x - wrist.x) * (pinky.y - wrist.y)) - ((index.y - wrist.y) * (pinky.x - wrist.x));
+        }
+
+        function triggerTransition() {
+            if (APP_MODE === 'PLANET') {
+                APP_MODE = 'TRANSITION';
+                transitionProgress = 0.0;
+
+                mindMatterLocked = false;
+                mindMatterFrozen = false; // Reset clears the freeze
+                brainState.targetShape = STATES.BRAIN;
+                brainState.shapeWeights = [1, 0, 0, 0, 0];
+                brainState.targetScatter = 0;
+                brainState.scatterAmount = 0;
+                brainState.targetMmuMix = 0;
+                brainState.mmuMixAmount = 0;
+                brainState.targetHeartMix = 0;
+                brainState.heartMixAmount = 0;
+                brainState.mindMatterActive = false;
+                brainState.prevMindMatterActive = false;
+                brainState.gesture = 'IDLE';
+                brainState.targetScale = 1.0;
+                brainState.pendingSpecialGesture = null;
+                brainState.specialGestureStartTime = 0;
+
+                brainState.linkRevealAmount = 0;
+                brainState.targetLinkReveal = 0;
+                linkRevealReadyAt = Infinity; 
+                linkGroup.scale.setScalar(0.001);
+                if (networkLines) { networkLines.material.opacity = 0; networkLines.visible = false; }
+                if (nodeParticles) { nodeMaterial.uniforms.u_opacity.value = 0; nodeParticles.visible = false; }
+
+                brainMaterial.uniforms.u_shapeWeights.value = [1, 0, 0, 0, 0];
+                brainMaterial.uniforms.u_scatterMix.value = 0;
+                brainMaterial.uniforms.u_mmuMix.value = 0;
+                brainMaterial.uniforms.u_heartMix.value = 0;
+                brainMaterial.uniforms.u_brightness.value = 0.35;
+                brainMaterial.uniforms.u_alphaScale.value = 0.45;
+
+                const ui = document.getElementById('main-ui');
+                ui.classList.remove('mode-planet');
+                ui.classList.add('mode-brain');
+                document.getElementById('mode-title').innerText = "Neural Core";
+                document.getElementById('camera-preview').classList.remove('planet-mode');
+            }
+        }
+
+        function resetToPlanet() {
+            APP_MODE = 'PLANET';
+            transitionProgress = 0.0;
+            mindMatterLocked = false;
+            mindMatterFrozen = false; // Reset clears the freeze
+
+            brainState.targetShape = STATES.BRAIN;
+            brainState.shapeWeights = [1, 0, 0, 0, 0];
+            brainState.scatterAmount = 0;
+            brainState.targetScatter = 0;
+            brainState.mmuMixAmount = 0;
+            brainState.targetMmuMix = 0;
+            brainState.rotationZ = 0;
+            brainState.targetRotationZ = 0;
+            brainState.rotationY = 0;
+            brainState.handDetected = false;
+            brainState.gesture = 'IDLE';
+            brainState.cameraRadius = 60;
+            brainState.targetScale = 1.0;
+            brainState.currentScale = 1.0;
+            brainState.mindMatterActive = false;
+            brainState.prevMindMatterActive = false;
+            brainState.targetMindMatterRotY = 0;
+            brainState.linkRevealAmount = 0;
+            brainState.targetLinkReveal = 0;
+            brainState.targetHeartMix = 0;
+            brainState.heartMixAmount = 0;
+            linkRevealReadyAt = Infinity;
+            linkGroup.scale.setScalar(0.001);
+
+            planetGroup.visible = true;
+            planetGroup.scale.setScalar(1.0);
+            planetGroup.rotation.set(0, 0, 0);
+            brainGroup.visible = false;
+            brainGroup.scale.setScalar(1.0);
+            brainGroup.rotation.set(0, 0, 0);
+
+            planetState.currentAngle = 0;
+            planetState.targetAngle = 0;
+            planetState.currentRadius = 150;
+            planetState.targetRadius = 150;
+            camera.position.set(0, 0, planetState.currentRadius);
+            camera.lookAt(0, 0, 0);
+
+            const ui = document.getElementById('main-ui');
+            ui.classList.remove('mode-brain');
+            ui.classList.add('mode-planet');
+            document.getElementById('mode-title').innerText = "Interstellar Mode";
+            document.getElementById('camera-preview').classList.add('planet-mode');
+
+            resetUITimer();
+        }
+
+        function resetToBrain() {
+            if (APP_MODE === 'PLANET') {
+                triggerTransition();
+                return;
+            }
+
+            mindMatterLocked = false;
+            mindMatterFrozen = false; // Reset clears the freeze
+            brainState.targetShape = STATES.BRAIN;
+            brainState.shapeWeights = [1, 0, 0, 0, 0];
+            brainState.scatterAmount = 0;
+            brainState.targetScatter = 0;
+            brainState.mmuMixAmount = 0;
+            brainState.targetMmuMix = 0;
+            brainState.rotationZ = 0;
+            brainState.targetRotationZ = 0;
+            brainState.rotationY = 0;
+            brainState.gesture = 'IDLE';
+            brainState.cameraRadius = CONFIG.defaultCameraDist;
+            brainState.targetScale = 1.0;
+            brainState.currentScale = 1.0;
+            brainState.mindMatterActive = false;
+            brainState.prevMindMatterActive = false;
+            brainState.targetMindMatterRotY = 0;
+            brainState.targetHeartMix = 0;
+            brainState.heartMixAmount = 0;
+            brainMaterial.uniforms.u_heartMix.value = 0;
+            brainState.pendingSpecialGesture = null;
+            brainState.specialGestureStartTime = 0;
+
+            brainState.linkRevealAmount = 0;
+            brainState.targetLinkReveal = 0;
+            linkGroup.scale.setScalar(0.001);
+            linkRevealReadyAt = performance.now() + LINK_REVEAL_DELAY_MS;
+
+            brainGestureReadyAt = performance.now() + BRAIN_SETTLE_MS;
+
+            resetUITimer();
+        }
+
+        function onResults(results) {
+            if(loadingDiv.style.display !== 'none') {
+                loadingDiv.style.opacity = '0';
+                setTimeout(() => loadingDiv.style.display = 'none', 500);
+            }
+
+            cameraCtx.save();
+            cameraCtx.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height);
+            cameraCtx.drawImage(results.image, 0, 0, cameraCanvas.width, cameraCanvas.height);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                
+                for (const landmarks of results.multiHandLandmarks) {
+                    const color = (APP_MODE === 'PLANET' || APP_MODE === 'TRANSITION') ? '#ffaa00' : '#00e5ff';
+                    drawConnectors(cameraCtx, landmarks, HAND_CONNECTIONS, {color: color, lineWidth: 2});
+                    drawLandmarks(cameraCtx, landmarks, {color: '#ffffff', lineWidth: 1, radius: 2});
+                }
+
+                if (APP_MODE === 'PLANET' || APP_MODE === 'TRANSITION') {
+                    if (demoModeActive) return; // Prevent gestures overriding demo
+                    if (results.multiHandLandmarks.length >= 2) {
+                        const h1 = results.multiHandLandmarks[0];
+                        const h2 = results.multiHandLandmarks[1];
+                        const ext1 = getExtendedCount(h1);
+                        const ext2 = getExtendedCount(h2);
+                        
+                        // Enforce strict two-fist requirement
+                        if (ext1 <= 1 && ext2 <= 1) {
+                            triggerTransition();
+                        } 
+                        else if (ext1 >= 4 && ext2 >= 4 && APP_MODE === 'PLANET') {
+                            const avgX = (h1[9].x + h2[9].x) / 2;
+                            planetState.targetAngle = (avgX - 0.5) * Math.PI * 2.5; 
+                            
+                            const dist = Math.hypot(h1[9].x - h2[9].x, h1[9].y - h2[9].y);
+                            const mapDist = Math.max(0.1, Math.min(0.8, dist));
+                            planetState.targetRadius = CONFIG.planetMinDist + (1.0 - (mapDist - 0.1) / 0.7) * (CONFIG.planetMaxDist - CONFIG.planetMinDist);
+                        }
+                    }
+                } 
+                else if (APP_MODE === 'BRAIN' && performance.now() >= brainGestureReadyAt) {
+                    if (demoModeActive) return; // Prevent gestures overriding demo
+                    if (mindMatterFrozen) { cameraCtx.restore(); return; } // Frozen at MIND_MATTER: ignore all gestures until reset
+                    brainState.handDetected = true;
+                    
+                    // Always evaluate gestures every frame so switching away from
+                    // MIND_MATTER / MMU_LOGO is picked up instantly instead of
+                    // staying stuck until the user leaves BRAIN mode.
+                    {
+                        let detectedNum = null;
+                        let openHandsCount = 0;
+                        let primaryHandX = 0.5;
+                        let primaryWristAngle = 0;
+                        let primaryPinchDist = 1;
+                        let primaryOtherFingersCurled = false;
+                        let primaryIsOpenHand = false;
+
+                        for (let i = 0; i < results.multiHandLandmarks.length; i++) {
+                            const lm = results.multiHandLandmarks[i];
+                            const wrist = lm[0];
+                            const middleMCP = lm[9];
+                            const palmSize = calcDist(wrist, middleMCP);
+                            
+                            if (i === 0) {
+                                primaryHandX = middleMCP.x;
+                                const dx = middleMCP.x - wrist.x;
+                                const dy = middleMCP.y - wrist.y;
+                                primaryWristAngle = -(Math.atan2(dy, dx) + Math.PI / 2);
+                            }
+
+                            const isIdx = calcDist(lm[8], wrist) > calcDist(lm[6], wrist) * 1.05;
+                            const isMid = calcDist(lm[12], wrist) > calcDist(lm[10], wrist) * 1.05;
+                            const isRng = calcDist(lm[16], wrist) > calcDist(lm[14], wrist) * 1.05;
+                            const isPnk = calcDist(lm[20], wrist) > calcDist(lm[18], wrist) * 1.05;
+                            const ext = (isIdx?1:0) + (isMid?1:0) + (isRng?1:0) + (isPnk?1:0);
+
+                            const thumbRatioPinkySide = calcDist(lm[4], lm[17]) / palmSize;
+                            const thumbRatioIndexSide = calcDist(lm[4], lm[5]) / palmSize;
+                            const thumbRatio = Math.max(thumbRatioPinkySide, thumbRatioIndexSide);
+
+                            const handKey = (results.multiHandedness && results.multiHandedness[i])
+                                ? results.multiHandedness[i].label
+                                : ('idx' + i);
+
+                            if (thumbStateSticky[handKey] === undefined) thumbStateSticky[handKey] = false;
+                            if (thumbRatio > 1.15) thumbStateSticky[handKey] = true;
+                            else if (thumbRatio < 0.95) thumbStateSticky[handKey] = false;
+                            const tExt = thumbStateSticky[handKey];
+
+                            if (!handGestureHistory[handKey]) handGestureHistory[handKey] = [];
+                            const histBuf = handGestureHistory[handKey];
+                            histBuf.push({ ext, tExt });
+                            if (histBuf.length > GESTURE_HISTORY_LEN) histBuf.shift();
+                            const quorum = Math.ceil(histBuf.length * 0.6);
+                            const openVotes = histBuf.filter(h => h.ext >= 4 && h.tExt).length;
+
+                            const isOpenHand = openVotes >= quorum;
+
+                            if (i === 0) {
+                                primaryPinchDist = calcDist(lm[4], lm[8]);
+                                primaryOtherFingersCurled = !isMid && !isRng && !isPnk;
+                                primaryIsOpenHand = isOpenHand;
+                            }
+
+                            if (isOpenHand) {
+                                openHandsCount++;
+                            } else {
+                                if (ext === 1 && isIdx) detectedNum = Math.max(detectedNum || 0, STATES.NUM1);
+                                else if (ext === 2 && isIdx && isMid) detectedNum = Math.max(detectedNum || 0, STATES.NUM2);
+                                else if (ext === 3 && isIdx && isMid && isRng) detectedNum = Math.max(detectedNum || 0, STATES.NUM3);
+                            }
+                        }
+
+                        let intendedSpecial = null;
+
+                        if (results.multiHandLandmarks.length >= 2) {
+                            const h1 = results.multiHandLandmarks[0];
+                            const h2 = results.multiHandLandmarks[1];
+
+                            if (openHandsCount >= 2) {
+                                const cp1 = getCrossProduct(h1);
+                                const cp2 = getCrossProduct(h2);
+                                if (cp1 * cp2 > 0) { 
+                                    intendedSpecial = 'MMU_LOGO';
+                                } else {
+                                    intendedSpecial = 'MIND_MATTER';
+                                }
+                            }
+                        } else if (results.multiHandLandmarks.length === 1) {
+                            const isAlreadyHeart = brainState.gesture === 'HEART';
+                            const pinchThreshold = isAlreadyHeart ? 0.11 : 0.08;
+
+                            if (primaryPinchDist < pinchThreshold && primaryOtherFingersCurled) {
+                                intendedSpecial = 'HEART';
+                            }
+                        }
+
+                        if (intendedSpecial) {
+                            if (brainState.pendingSpecialGesture !== intendedSpecial) {
+                                brainState.pendingSpecialGesture = intendedSpecial;
+                                brainState.specialGestureStartTime = performance.now();
+                            } else {
+                                // INSTANT RECOGNITION: Set holdRequired to 0 for instantaneous triggering
+                                let holdRequired = 0; 
+                                if (intendedSpecial === 'MIND_MATTER') holdRequired = 0; 
+                                else if (intendedSpecial === 'MMU_LOGO') holdRequired = 0;
+                                else if (intendedSpecial === 'HEART') holdRequired = 50; // Keep slightly above 0 for heart to avoid accidental pinches
+
+                                if (performance.now() - brainState.specialGestureStartTime >= holdRequired) {
+                                    brainState.targetHeartMix = (intendedSpecial === 'HEART') ? 1.0 : 0.0;
+                                    brainState.targetMmuMix = (intendedSpecial === 'MMU_LOGO') ? 1.0 : 0.0;
+                                    brainState.targetScatter = (intendedSpecial === 'MIND_MATTER') ? 1.0 : 0.0;
+                                    
+                                    brainState.targetShape = STATES.BRAIN;
+                                    brainState.targetScale = 1.0;
+                                    brainState.gesture = intendedSpecial;
+                                    
+                                    if (intendedSpecial === 'MIND_MATTER') {
+                                        brainState.mindMatterActive = true;
+                                        brainState.targetMindMatterRotY = 0;
+                                        mindMatterLocked = true; 
+                                        mindMatterFrozen = true; // Stop reading gestures until reset button is pressed
+                                    } else {
+                                        brainState.mindMatterActive = false;
+                                        mindMatterLocked = false;
+                                    }
+                                }
+                            }
+                        } else {
+                            brainState.pendingSpecialGesture = null;
+                            
+                            brainState.targetMmuMix = 0.0;
+                            brainState.targetHeartMix = 0.0;
+                            brainState.targetScatter = 0.0;
+                            brainState.mindMatterActive = false;
+                            mindMatterLocked = false;
+                            
+                            brainState.handX = primaryHandX;
+                            brainState.targetRotationZ = primaryWristAngle;
+
+                            if (detectedNum !== null) {
+                                brainState.targetShape = detectedNum;
+                                brainState.targetScale = 1.0;
+                                brainState.gesture = 'NUMBER';
+                            } else {
+                                brainState.targetShape = STATES.BRAIN;
+                                
+                                if (results.multiHandLandmarks.length === 1) {
+                                    if (primaryIsOpenHand) {
+                                        brainState.gesture = 'OPEN_STATIONARY';
+                                        brainState.targetScale = 1.0;
+                                    } else {
+                                        brainState.gesture = 'IDLE';
+                                        brainState.targetScale = 1.0;
+                                    }
+                                } else {
+                                    brainState.gesture = 'IDLE';
+                                    brainState.targetScale = 1.0;
+                                }
+                            }
+                        }
+                    }
+                }
+
+            } else {
+                if (demoModeActive) return; // Prevent resetting states during demo
+                brainState.handDetected = false;
+                brainState.pendingSpecialGesture = null;
+                // Hands left the frame — clear smoothing buffers
+                handGestureHistory = {};
+                thumbStateSticky = {};
+                if (!mindMatterLocked) {
+                    brainState.targetShape = STATES.BRAIN;
+                    brainState.targetScatter = 0;
+                    brainState.targetMmuMix = 0;
+                    brainState.targetHeartMix = 0;
+                    brainState.gesture = 'IDLE';
+                    brainState.mindMatterActive = false;
+                    brainState.targetScale = 1.0; 
+                }
+            }
+
+            if (brainState.mindMatterActive && !brainState.prevMindMatterActive) {
+                brainState.rotationY = 0;
+                brainState.rotationZ = 0;
+            }
+            brainState.prevMindMatterActive = brainState.mindMatterActive;
+            
+            cameraCtx.restore();
+        }
+
+        function showLoadingError(message) {
+            const title = document.getElementById('loading-title');
+            const sub = document.getElementById('loading-sub');
+            loadingDiv.style.opacity = '1';
+            loadingDiv.style.display = 'block';
+            if (title) { title.textContent = 'Camera Unavailable'; title.style.color = '#ff6b6b'; }
+            if (sub) sub.textContent = message;
+        }
+
+        let globalCamera = null;
+        let globalHands = null;
+        let currentFacingMode = 'user';
+        let isTrackingFrozen = false;
+
+        function startCamera() {
+            if (globalCamera) {
+                globalCamera.stop();
+            }
+            globalCamera = new Camera(videoElement, {
+                onFrame: async () => {
+                    if (isTrackingFrozen) return;
+                    try {
+                        if (globalHands) await globalHands.send({image: videoElement});
+                    } catch (err) {
+                        console.error('Hand-tracking frame error:', err);
+                    }
+                },
+                width: 320, height: 240,
+                facingMode: currentFacingMode
+            });
+            globalCamera.start().catch((err) => {
+                console.error('Camera start failed:', err);
+                const isPermissionDenied = err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError');
+                showLoadingError(isPermissionDenied
+                    ? 'Camera access was denied. Please allow camera access in your browser settings and reload the page.'
+                    : 'Could not start the camera. Check that a camera is connected and reload the page.');
+            });
+        }
+
+        setTimeout(() => {
+            try {
+                globalHands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`});
+                globalHands.setOptions({
+                    maxNumHands: 2, 
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.6,
+                    minTrackingConfidence: 0.6
+                });
+                globalHands.onResults(onResults);
+
+                startCamera();
+            } catch (err) {
+                console.error('Hand-tracking init failed:', err);
+                showLoadingError('Failed to initialize hand tracking. Please reload the page.');
+            }
+        }, 150);
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const time = clock.getElapsedTime();
+
+            if (APP_MODE === 'PLANET') {
+                coreParticles.rotation.y += 0.001;
+                surfaceParticles.rotation.y += 0.001;
+                ring1.rotation.z -= 0.001; 
+                ring2.rotation.z += 0.001;
+
+                planetState.currentAngle += (planetState.targetAngle - planetState.currentAngle) * 5.0 * dt;
+                planetState.currentRadius += (planetState.targetRadius - planetState.currentRadius) * 5.0 * dt;
+                
+                camera.position.x = planetState.currentRadius * Math.sin(planetState.currentAngle);
+                camera.position.z = planetState.currentRadius * Math.cos(planetState.currentAngle);
+                camera.lookAt(0, 0, 0);
+
+            } else if (APP_MODE === 'TRANSITION') {
+                transitionProgress += dt * 0.7; 
+                
+                planetState.currentRadius += (60 - planetState.currentRadius) * dt * 4.0;
+                camera.position.set(0, 0, planetState.currentRadius);
+                camera.lookAt(0, 0, 0);
+
+                if (transitionProgress < 0.4) {
+                    let p = transitionProgress / 0.4;
+                    let scale = 1.0 - Math.pow(p, 4);
+                    planetGroup.scale.setScalar(Math.max(0.001, scale));
+                    
+                    coreParticles.rotation.y += 0.2 * p;
+                    surfaceParticles.rotation.y += 0.2 * p;
+                    ring1.rotation.z -= 0.2 * p;
+                    ring2.rotation.z += 0.2 * p;
+                    
+                } else if (transitionProgress < 0.5) {
+                    planetGroup.visible = false;
+                    brainGroup.visible = false;
+                    
+                } else {
+                    brainGroup.visible = true;
+                    let p = (transitionProgress - 0.5) / 0.5; 
+                    
+                    brainMaterial.uniforms.u_time.value = time;
+                    
+                    let easeOutBack = 1 + 2.70158 * Math.pow(p - 1, 3) + 1.70158 * Math.pow(p - 1, 2);
+                    brainState.currentScale = Math.max(0.01, easeOutBack);
+                    brainGroup.scale.setScalar(brainState.currentScale);
+
+                    if (networkLines) networkLines.visible = false;
+                    if (nodeParticles) nodeParticles.visible = false;
+                    linkGroup.scale.setScalar(0.001);
+                }
+
+                if (transitionProgress >= 1.0) {
+                    APP_MODE = 'BRAIN';
+                    planetGroup.visible = false;
+                    brainState.cameraRadius = 60;
+                    brainState.currentScale = 1.0;
+
+                    brainState.targetShape = STATES.BRAIN;
+                    brainState.shapeWeights = [1, 0, 0, 0, 0];
+                    brainState.targetScatter = 0;
+                    brainState.scatterAmount = 0;
+                    brainState.targetMmuMix = 0;
+                    brainState.mmuMixAmount = 0;
+                    brainState.targetHeartMix = 0;
+                    brainState.heartMixAmount = 0;
+                    brainState.mindMatterActive = false;
+                    brainState.prevMindMatterActive = false;
+                    brainState.gesture = 'IDLE';
+                    mindMatterLocked = false;
+                    mindMatterFrozen = false; // Reset clears the freeze
+
+                    brainState.linkRevealAmount = 0;
+                    brainState.targetLinkReveal = 0;
+                    linkRevealReadyAt = performance.now() + LINK_REVEAL_DELAY_MS;
+
+                    brainMaterial.uniforms.u_shapeWeights.value = [1, 0, 0, 0, 0];
+                    brainMaterial.uniforms.u_scatterMix.value = 0;
+                    brainMaterial.uniforms.u_mmuMix.value = 0;
+                    brainMaterial.uniforms.u_heartMix.value = 0;
+                    brainMaterial.uniforms.u_brightness.value = 0.35;
+                    brainMaterial.uniforms.u_alphaScale.value = 0.45;
+
+                    brainGestureReadyAt = performance.now() + BRAIN_SETTLE_MS;
+                }
+                renderer.render(scene, camera);
+                return; 
+            }
+
+            if (APP_MODE === 'BRAIN') {
+                brainMaterial.uniforms.u_time.value = time;
+
+                for(let i=0; i<5; i++) {
+                    let target = (i === brainState.targetShape) ? 1.0 : 0.0;
+                    brainState.shapeWeights[i] += (target - brainState.shapeWeights[i]) * dt * 8.0;
+                }
+                let weightSum = brainState.shapeWeights.reduce((a, b) => a + b, 0);
+                if(weightSum > 0) brainMaterial.uniforms.u_shapeWeights.value = brainState.shapeWeights.map(w => w / weightSum);
+
+                let scatterDiff = brainState.targetScatter - brainState.scatterAmount;
+                brainState.scatterAmount += scatterDiff * dt * (scatterDiff < 0 ? 12.0 : 5.0);
+                brainMaterial.uniforms.u_scatterMix.value = brainState.scatterAmount;
+                
+                let mmuDiff = brainState.targetMmuMix - brainState.mmuMixAmount;
+                brainState.mmuMixAmount += mmuDiff * dt * (mmuDiff < 0 ? 15.0 : 8.0);
+                brainMaterial.uniforms.u_mmuMix.value = brainState.mmuMixAmount;
+
+                let heartDiff = brainState.targetHeartMix - brainState.heartMixAmount;
+                brainState.heartMixAmount += heartDiff * dt * (heartDiff < 0 ? 15.0 : 8.0);
+                brainMaterial.uniforms.u_heartMix.value = brainState.heartMixAmount;
+
+                brainState.currentScale += (brainState.targetScale - brainState.currentScale) * dt * 8.0;
+                brainGroup.scale.set(brainState.currentScale, brainState.currentScale, brainState.currentScale);
+
+                const isSpecialView = brainState.scatterAmount > 0.1 || brainState.mmuMixAmount > 0.1 || brainState.heartMixAmount > 0.1 || brainState.targetShape !== STATES.BRAIN;
+                let brightness, alphaScale;
+                if (isSpecialView) {
+                    brightness = 1.0 + (1.0 - (brainState.currentScale - CONFIG.minBrainScale) / (CONFIG.maxBrainScale - CONFIG.minBrainScale)) * 1.5;
+                    alphaScale = 1.0;
+                } else {
+                    let t = Math.max(0, Math.min(1, (brainState.currentScale - CONFIG.minBrainScale) / (CONFIG.maxBrainScale - CONFIG.minBrainScale)));
+                    brightness = 0.35 + 0.65 * t;
+                    alphaScale = 0.45 + 0.55 * t;
+                }
+                brainMaterial.uniforms.u_brightness.value = brightness;
+                brainMaterial.uniforms.u_alphaScale.value = alphaScale;
+
+                let targetCamRadius = CONFIG.defaultCameraDist;
+                if (brainState.targetScatter > 0.5 || brainState.targetMmuMix > 0.5) {
+                    targetCamRadius = CONFIG.minCameraDist;
+                }
+                
+                brainState.cameraRadius += (targetCamRadius - brainState.cameraRadius) * dt * 5.0;
+                brainState.cameraRadius = Math.max(CONFIG.minCameraDist, Math.min(CONFIG.maxCameraDist, brainState.cameraRadius));
+                camera.position.set(0, 0, brainState.cameraRadius);
+                camera.lookAt(0, 0, 0);
+
+                let isNumber = (brainState.targetShape !== STATES.BRAIN);
+                
+                if (brainState.targetMmuMix > 0.5) {
+                    let rotDiffZ = 0 - brainState.rotationZ;
+                    while (rotDiffZ > Math.PI) rotDiffZ -= Math.PI * 2; while (rotDiffZ < -Math.PI) rotDiffZ += Math.PI * 2;
+                    brainState.rotationZ += rotDiffZ * dt * 10.0;
+
+                    let rotDiffY = 0 - brainState.rotationY;
+                    while (rotDiffY > Math.PI) rotDiffY -= Math.PI * 2; while (rotDiffY < -Math.PI) rotDiffY += Math.PI * 2;
+                    brainState.rotationY += rotDiffY * dt * 10.0;
+                } 
+                else if (isNumber) {
+                    let curYMod = brainState.rotationY % (Math.PI * 2);
+                    if (curYMod > Math.PI) curYMod -= Math.PI * 2; if (curYMod < -Math.PI) curYMod += Math.PI * 2;
+                    brainState.rotationY -= curYMod * dt * 5.0; 
+
+                    let rotZDiff = 0 - brainState.rotationZ;
+                    while (rotZDiff > Math.PI) rotZDiff -= Math.PI * 2; while (rotZDiff < -Math.PI) rotZDiff += Math.PI * 2;
+                    brainState.rotationZ += rotZDiff * dt * 5.0;
+                }
+                else if (brainState.mindMatterActive) {
+                    let rotZDiff = 0 - brainState.rotationZ;
+                    while (rotZDiff > Math.PI) rotZDiff -= Math.PI * 2; while (rotZDiff < -Math.PI) rotZDiff += Math.PI * 2;
+                    brainState.rotationZ += rotZDiff * dt * 10.0;
+
+                    let rotYDiff = brainState.targetMindMatterRotY - brainState.rotationY;
+                    while (rotYDiff > Math.PI) rotYDiff -= Math.PI * 2; while (rotYDiff < -Math.PI) rotYDiff += Math.PI * 2;
+                    brainState.rotationY += rotYDiff * dt * 6.0;
+                }
+                else if (brainState.gesture === 'HEART') {
+                    let rotZDiff = 0 - brainState.rotationZ;
+                    while (rotZDiff > Math.PI) rotZDiff -= Math.PI * 2; while (rotZDiff < -Math.PI) rotZDiff += Math.PI * 2;
+                    brainState.rotationZ += rotZDiff * dt * 8.0;
+                    
+                    brainState.rotationY += dt * 1.0; 
+                } else {
+                    let rotZDiff = 0 - brainState.rotationZ;
+                    while (rotZDiff > Math.PI) rotZDiff -= Math.PI * 2; while (rotZDiff < -Math.PI) rotZDiff += Math.PI * 2;
+                    brainState.rotationZ += rotZDiff * dt * 5.0;
+
+                    let curYMod = brainState.rotationY % (Math.PI * 2);
+                    if (curYMod > Math.PI) curYMod -= Math.PI * 2; if (curYMod < -Math.PI) curYMod += Math.PI * 2;
+                    brainState.rotationY -= curYMod * dt * 5.0;
+                }
+                
+                brainGroup.rotation.z = brainState.rotationZ;
+                brainGroup.rotation.y = brainState.rotationY;
+
+                const BREATH_SPEED = 3.0; 
+                const breathWave = 0.5 + 0.5 * Math.sin(time * BREATH_SPEED);
+                let intensityMult = 0.35 + 0.65 * breathWave; 
+                let linkIntensityMult = 0.35 + 0.65 * breathWave; 
+
+                if (APP_MODE === 'BRAIN' && brainState.targetLinkReveal < 1 && performance.now() >= linkRevealReadyAt) {
+                    brainState.targetLinkReveal = 1;
+                }
+                brainState.linkRevealAmount += (brainState.targetLinkReveal - brainState.linkRevealAmount) * dt * 3.0;
+
+                const lp = brainState.linkRevealAmount;
+                const linkPopScale = 1 + 2.70158 * Math.pow(lp - 1, 3) + 1.70158 * Math.pow(lp - 1, 2);
+                linkGroup.scale.setScalar(Math.max(0.001, linkPopScale));
+
+                const netFade = brainState.shapeWeights[0] * (1.0 - Math.max(brainState.scatterAmount, Math.max(brainState.mmuMixAmount, brainState.heartMixAmount)));
+                const netOpacity = LINK_BASE_OPACITY * netFade * linkIntensityMult * brainState.linkRevealAmount;
+
+                if (networkLines) {
+                    networkLines.material.opacity = netOpacity;
+                    networkLines.visible = netOpacity > 0.01;
+                }
+                if (nodeParticles) {
+                    nodeMaterial.uniforms.u_time.value = time;
+                    nodeMaterial.uniforms.u_opacity.value = NODE_BASE_OPACITY * netFade * intensityMult * brainState.linkRevealAmount;
+                    nodeParticles.visible = (netFade * brainState.linkRevealAmount) > 0.01;
+                }
+            }
+
+            renderer.render(scene, camera);
+
+            if (takeSnapshotFlag) {
+                takeSnapshotFlag = false;
+                try {
+                    const dataURL = renderer.domElement.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `MindMatter_Snapshot_${new Date().getTime()}.png`;
+                    link.href = dataURL;
+                    link.click();
+                } catch (err) {
+                    console.error("Screenshot failed", err);
+                }
+            }
+        }
+
+        animate();
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        document.getElementById('colorPicker').addEventListener('input', (e) => {
+            brainMaterial.uniforms.u_baseColor.value.set(e.target.value);
+            e.target.style.setProperty('--picker-glow', e.target.value);
+        });
+
+        document.getElementById('linkStartPicker').addEventListener('input', (e) => {
+            linkStartColor.set(e.target.value); updateNetworkColors();
+            e.target.style.setProperty('--picker-glow', e.target.value);
+        });
+        document.getElementById('linkMiddlePicker').addEventListener('input', (e) => {
+            linkMiddleColor.set(e.target.value); updateNetworkColors();
+            e.target.style.setProperty('--picker-glow', e.target.value);
+        });
+        document.getElementById('linkEndPicker').addEventListener('input', (e) => {
+            linkEndColor.set(e.target.value); updateNetworkColors();
+            e.target.style.setProperty('--picker-glow', e.target.value);
+        });
+        
+        document.querySelectorAll('input[type="color"]').forEach(picker => {
+            picker.style.setProperty('--picker-glow', picker.value);
+        });
+
+        function updateUploadLabel(inputId) {
+            const label = document.querySelector(`label[for="${inputId}"]`);
+            if (label) {
+                label.textContent = 'Attached';
+                label.style.color = '#00e5ff';
+                label.style.borderColor = 'rgba(0, 229, 255, 0.5)';
+                label.style.background = 'rgba(0, 229, 255, 0.1)';
+            }
+        }
+
+        const activeUploadUrls = {};
+        function makeTrackedObjectUrl(inputId, file) {
+            if (activeUploadUrls[inputId]) URL.revokeObjectURL(activeUploadUrls[inputId]);
+            const url = URL.createObjectURL(file);
+            activeUploadUrls[inputId] = url;
+            return url;
+        }
+
+        let base64MMU = null;
+        let base64MindMatter = null;
+        let base64BrainShape = null;
+
+        function resizeAndConvertImage(file, maxWidth, maxHeight, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width *= maxHeight / height;
+                            height = maxHeight;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL(file.type || 'image/png', 0.8));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        document.getElementById('imageUpload').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                processImageToParticles(makeTrackedObjectUrl('imageUpload', file), false);
+                updateUploadLabel('imageUpload');
+                resizeAndConvertImage(file, 600, 600, (b64) => { base64MindMatter = b64; });
+            }
+        });
+        
+        document.getElementById('mmuUpload').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                processImageToParticles(makeTrackedObjectUrl('mmuUpload', file), true);
+                updateUploadLabel('mmuUpload');
+                resizeAndConvertImage(file, 600, 600, (b64) => { base64MMU = b64; });
+            }
+        });
+
+        document.getElementById('brainShapeUpload').addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                processImageToBrainShape(makeTrackedObjectUrl('brainShapeUpload', file));
+                updateUploadLabel('brainShapeUpload');
+                resizeAndConvertImage(file, 300, 300, (b64) => { base64BrainShape = b64; });
+            }
+        });
+
+        document.getElementById('savePresetBtn').addEventListener('click', () => {
+            const preset = {
+                colorCore: document.getElementById('colorPicker').value,
+                colorLinkStart: document.getElementById('linkStartPicker').value,
+                colorLinkMiddle: document.getElementById('linkMiddlePicker').value,
+                colorLinkEnd: document.getElementById('linkEndPicker').value,
+                mmuLogo: base64MMU,
+                mindMatterLogo: base64MindMatter,
+                brainShape: base64BrainShape
+            };
+            try {
+                localStorage.setItem('mindmatter_preset', JSON.stringify(preset));
+                const btn = document.getElementById('savePresetBtn');
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '✓ Saved';
+                btn.style.color = '#00e5ff';
+                btn.style.borderColor = 'rgba(0, 229, 255, 0.5)';
+                setTimeout(() => { btn.innerHTML = oldText; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+            } catch(e) {
+                console.error("Local storage quota exceeded", e);
+                const btn = document.getElementById('savePresetBtn');
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '❌ Too Large';
+                btn.style.color = '#ff3b30';
+                btn.style.borderColor = 'rgba(255, 59, 48, 0.5)';
+                setTimeout(() => { btn.innerHTML = oldText; btn.style.color = ''; btn.style.borderColor = ''; }, 3000);
+            }
+        });
+
+        document.getElementById('loadPresetBtn').addEventListener('click', () => {
+            const saved = localStorage.getItem('mindmatter_preset');
+            if (saved) {
+                const preset = JSON.parse(saved);
+                
+                if(preset.colorCore) { 
+                    const cp = document.getElementById('colorPicker'); cp.value = preset.colorCore; 
+                    cp.dispatchEvent(new Event('input')); 
+                }
+                if(preset.colorLinkStart) { 
+                    const cp = document.getElementById('linkStartPicker'); cp.value = preset.colorLinkStart; 
+                    cp.dispatchEvent(new Event('input')); 
+                }
+                if(preset.colorLinkMiddle) { 
+                    const cp = document.getElementById('linkMiddlePicker'); cp.value = preset.colorLinkMiddle; 
+                    cp.dispatchEvent(new Event('input')); 
+                }
+                if(preset.colorLinkEnd) { 
+                    const cp = document.getElementById('linkEndPicker'); cp.value = preset.colorLinkEnd; 
+                    cp.dispatchEvent(new Event('input')); 
+                }
+
+                if(preset.mmuLogo) {
+                    base64MMU = preset.mmuLogo;
+                    processImageToParticles(base64MMU, true);
+                    updateUploadLabel('mmuUpload');
+                }
+                if(preset.mindMatterLogo) {
+                    base64MindMatter = preset.mindMatterLogo;
+                    processImageToParticles(base64MindMatter, false);
+                    updateUploadLabel('imageUpload');
+                }
+                if(preset.brainShape) {
+                    base64BrainShape = preset.brainShape;
+                    processImageToBrainShape(base64BrainShape);
+                    updateUploadLabel('brainShapeUpload');
+                }
+
+                const btn = document.getElementById('loadPresetBtn');
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '✓ Loaded';
+                btn.style.color = '#00e5ff';
+                btn.style.borderColor = 'rgba(0, 229, 255, 0.5)';
+                setTimeout(() => { btn.innerHTML = oldText; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+            } else {
+                const btn = document.getElementById('loadPresetBtn');
+                const oldText = btn.innerHTML;
+                btn.innerHTML = 'No Preset';
+                btn.style.color = '#ffaa00';
+                setTimeout(() => { btn.innerHTML = oldText; btn.style.color = ''; }, 2000);
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', resetToPlanet);
+        document.getElementById('resetBrainButton').addEventListener('click', resetToBrain);
+
+        async function runDemoSequence() {
+            const wait = async (ms) => {
+                const steps = ms / 100;
+                for(let i=0; i<steps; i++) {
+                    if(!demoModeActive) return false;
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return true;
+            };
+
+            while(demoModeActive) {
+                if (APP_MODE !== 'PLANET') resetToPlanet();
+                if(!(await wait(4000))) break;
+                
+                triggerTransition();
+                if(!(await wait(3000))) break;
+                
+                brainState.targetShape = STATES.BRAIN;
+                brainState.targetMmuMix = 1.0;
+                brainState.targetScatter = 0.0;
+                brainState.targetHeartMix = 0.0;
+                brainState.mindMatterActive = false;
+                if(!(await wait(4000))) break;
+                
+                brainState.targetMmuMix = 0.0;
+                brainState.targetScatter = 1.0;
+                brainState.mindMatterActive = true;
+                if(!(await wait(4000))) break;
+                
+                brainState.targetScatter = 0.0;
+                brainState.mindMatterActive = false;
+                brainState.targetHeartMix = 1.0;
+                if(!(await wait(3000))) break;
+                
+                brainState.targetHeartMix = 0.0;
+                const numSequence = [STATES.NUM1, STATES.NUM2, STATES.NUM3, STATES.NUM4];
+                for(let n of numSequence) {
+                    brainState.targetShape = n;
+                    if(!(await wait(2000))) break;
+                }
+                if(!demoModeActive) break;
+            }
+        }
+
+        document.getElementById('demoBtn').addEventListener('click', (e) => {
+            demoModeActive = !demoModeActive;
+            const btn = e.target;
+            
+            if (demoModeActive) {
+                btn.innerHTML = '⏹ Stop Demo';
+                btn.classList.add('demo-active');
+                runDemoSequence();
+            } else {
+                btn.innerHTML = '▶ Auto Pilot';
+                btn.classList.remove('demo-active');
+                if (APP_MODE === 'BRAIN') resetToBrain();
+                else resetToPlanet();
+            }
+        });
+
+        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const iconExpand = fullscreenBtn.querySelector('.icon-expand');
+        const iconCompress = fullscreenBtn.querySelector('.icon-compress');
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement &&
+                !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) { 
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) {
+                    document.documentElement.msRequestFullscreen();
+                } else if (document.documentElement.mozRequestFullScreen) {
+                    document.documentElement.mozRequestFullScreen();
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        function updateFullscreenIcon() {
+            if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+                iconExpand.style.display = 'none';
+                iconCompress.style.display = 'block';
+            } else {
+                iconExpand.style.display = 'block';
+                iconCompress.style.display = 'none';
+            }
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullScreen);
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+        document.addEventListener('mozfullscreenchange', updateFullscreenIcon);
+        document.addEventListener('MSFullscreenChange', updateFullscreenIcon);
+
+        const toggleCameraBtn = document.getElementById('toggleCameraBtn');
+        const cameraPreview = document.getElementById('camera-preview');
+        let cameraPipVisible = true;
+
+        toggleCameraBtn.addEventListener('click', () => {
+            cameraPipVisible = !cameraPipVisible;
+            if (cameraPipVisible) {
+                cameraPreview.classList.remove('hidden-pip');
+                toggleCameraBtn.innerHTML = '👁 Hide Camera PIP';
+                toggleCameraBtn.style.opacity = '1';
+            } else {
+                cameraPreview.classList.add('hidden-pip');
+                toggleCameraBtn.innerHTML = '👁 Show Camera PIP';
+                toggleCameraBtn.style.opacity = '0.7';
+            }
+        });
+
+        const switchCameraBtn = document.getElementById('switchCameraBtn');
+        switchCameraBtn.addEventListener('click', () => {
+            currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+            const oldText = switchCameraBtn.innerHTML;
+            switchCameraBtn.innerHTML = '🔄 Switching...';
+            startCamera();
+            setTimeout(() => {
+                switchCameraBtn.innerHTML = '🔄 Switch Camera';
+            }, 800);
+        });
+
+        const freezeTrackingBtn = document.getElementById('freezeTrackingBtn');
+        freezeTrackingBtn.addEventListener('click', () => {
+            isTrackingFrozen = !isTrackingFrozen;
+            if (isTrackingFrozen) {
+                freezeTrackingBtn.innerHTML = '▶️ Resume Tracking';
+                freezeTrackingBtn.classList.add('freeze-active');
+            } else {
+                freezeTrackingBtn.innerHTML = '⏸ Freeze Tracking';
+                freezeTrackingBtn.classList.remove('freeze-active');
+            }
+        });
+
+        const qualityBtn = document.getElementById('qualityBtn');
+        let isLowQuality = false;
+        qualityBtn.addEventListener('click', () => {
+            isLowQuality = !isLowQuality;
+            
+            const qMult = isLowQuality ? 0.35 : 1.0;
+            
+            coreGeo.setDrawRange(0, Math.floor(CONFIG.particleCountCore * qMult));
+            surfaceGeo.setDrawRange(0, Math.floor(CONFIG.particleCountSurface * qMult));
+            ring1.geometry.setDrawRange(0, Math.floor(1500 * qMult)); 
+            ring2.geometry.setDrawRange(0, Math.floor(1500 * qMult));
+            geometry.setDrawRange(0, Math.floor(CONFIG.particleCount * qMult));
+            
+            if (isLowQuality) {
+                qualityBtn.innerHTML = '⚡ Quality: Fast';
+                qualityBtn.style.opacity = '0.8';
+            } else {
+                qualityBtn.innerHTML = '✨ Quality: Ultra';
+                qualityBtn.style.opacity = '1';
+            }
+        });
+
+        const zenBtn = document.getElementById('zenBtn');
+        let isZenMode = false;
+
+        function toggleZenMode() {
+            isZenMode = !isZenMode;
+            if (isZenMode) {
+                document.body.classList.add('zen-active');
+                zenBtn.innerHTML = '🧘 Exit Zen (Press H)';
+                
+                if (isPinned) {
+                    isPinned = false;
+                    pinBtn.classList.remove('pinned');
+                    pinBtn.setAttribute('title', 'Pin Panel Open');
+                }
+            } else {
+                document.body.classList.remove('zen-active');
+                zenBtn.innerHTML = '🧘 Zen Mode (Press H)';
+                resetUITimer();
+            }
+        }
+
+        zenBtn.addEventListener('click', toggleZenMode);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            
+            if (e.key.toLowerCase() === 'h') {
+                toggleZenMode();
+            }
+        });
+
+        const snapshotBtn = document.getElementById('snapshotBtn');
+        const flashOverlay = document.getElementById('flash-overlay');
+
+        snapshotBtn.addEventListener('click', () => {
+            takeSnapshotFlag = true;
+            
+            flashOverlay.classList.add('flash-active');
+            setTimeout(() => {
+                flashOverlay.classList.remove('flash-active');
+            }, 50);
+            
+            const oldText = snapshotBtn.innerHTML;
+            snapshotBtn.innerHTML = '✨ Captured!';
+            setTimeout(() => {
+                snapshotBtn.innerHTML = oldText;
+            }, 1500);
+        });
+
+        const mainUi = document.getElementById('main-ui');
+        const uiToggle = document.getElementById('ui-toggle');
+        const pinBtn = document.getElementById('pin-ui-btn');
+        let uiTimeout;
+        let isPinned = false;
+
+        function showUI() {
+            mainUi.classList.remove('hidden-ui');
+            uiToggle.style.transform = 'translateY(-50%) translateX(-120%)';
+            resetUITimer();
+        }
+
+        function hideUI() {
+            if (isPinned) return;
+            mainUi.classList.add('hidden-ui');
+            uiToggle.style.transform = 'translateY(-50%) translateX(0)';
+        }
+
+        function togglePin(e) {
+            if (e) e.stopPropagation();
+            isPinned = !isPinned;
+            if (isPinned) {
+                pinBtn.classList.add('pinned');
+                pinBtn.setAttribute('title', 'Unpin Panel');
+                clearTimeout(uiTimeout); 
+                showUI();
+            } else {
+                pinBtn.classList.remove('pinned');
+                pinBtn.setAttribute('title', 'Pin Panel Open');
+                resetUITimer(); 
+            }
+        }
+
+        pinBtn.addEventListener('click', togglePin);
+
+        uiToggle.addEventListener('click', showUI);
+
+        document.getElementById('close-ui-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (isPinned) {
+                isPinned = false;
+                pinBtn.classList.remove('pinned');
+                pinBtn.setAttribute('title', 'Pin Panel Open');
+            }
+            hideUI();
+        });
+
+        function resetUITimer() {
+            clearTimeout(uiTimeout);
+            if (!isPinned && !mainUi.classList.contains('hidden-ui')) {
+                uiTimeout = setTimeout(hideUI, 6000); 
+            }
+        }
+
+        mainUi.addEventListener('mouseenter', () => clearTimeout(uiTimeout));
+        mainUi.addEventListener('mouseleave', resetUITimer);
+
+        window.addEventListener('mousemove', (e) => {
+            if (mainUi.classList.contains('hidden-ui')) {
+                if (e.clientX <= 50) showUI();
+            } else {
+                resetUITimer();
+            }
+        });
+
+        window.addEventListener('touchstart', (e) => {
+            if (mainUi.classList.contains('hidden-ui')) {
+                if (e.touches && e.touches.length > 0 && e.touches[0].clientX <= 50) showUI();
+            } else {
+                resetUITimer();
+            }
+        });
+        
+        resetUITimer();
+
+        window.addEventListener('load', () => {
+            // Automatically process the provided file default when loaded
+            processImageToParticles('Mind Matters logo.png', false);
+        });
+
+    </script>
+</body>
+</html>
