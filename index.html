@@ -1744,8 +1744,8 @@
                     
                     // Decouple background brightness from foreground sliders mathematically
                     if (totalMix > 0.001) {
-                        float mmMult = mix(1.5, u_mmLogoBrightness, isMmForeground);
-                        float mmuMult = mix(1.5, u_mmuLogoBrightness, isMmuForeground);
+                        float mmMult = mix(2.0, u_mmLogoBrightness, isMmForeground);
+                        float mmuMult = mix(2.0, u_mmuLogoBrightness, isMmuForeground);
                         sliderMult = (u_scatterMix * mmMult + u_mmuMix * mmuMult) / totalMix;
                     }
                     
