@@ -1744,6 +1744,8 @@
                     
                     // Decouple background brightness from foreground sliders mathematically
                     if (totalMix > 0.001) {
+                        // ADJUSTMENT HERE: Setting background star brightness directly to 2.0
+                        
                         float mmMult = mix(4.0, u_mmLogoBrightness, isMmForeground);
                         float mmuMult = mix(4.0, u_mmuLogoBrightness, isMmuForeground);
                         sliderMult = (u_scatterMix * mmMult + u_mmuMix * mmuMult) / totalMix;
@@ -3005,7 +3007,8 @@
         resetUITimer();
 
         window.addEventListener('load', () => {
-            processImageToParticles('Mind Matters logo.png', false);
+            // Removed automatic loading so the logo only appears when a file is uploaded.
+            // processImageToParticles('Mind Matters logo.png', false); 
         });
 
     </script>
