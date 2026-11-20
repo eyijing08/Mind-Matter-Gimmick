@@ -28,7 +28,7 @@ An interactive, real-time 3D particle showcase controlled entirely through webca
 ### Neural Core Mode (Brain)
 | Gesture | Action |
 | :--- | :--- |
-| 🖐 🖐 **Two Open Hands (Same Palm Orientation)** | Reveal **MMU Logo** *(requires uploaded image)* |
+| 🖐(heading down) 🖐(heading up) **Two Open Hands (Different Palm Orientation)** | Reveal **MMU Logo** *(requires uploaded image)* |
 | 🖐 🤚 **Two Open Hands (Opposite Orientation)** | Reveal & lock **Mind Matters Logo** *(requires uploaded image)*. Once locked, move two open hands to rotate and tilt the logo in 3D |
 | 🫰 **Finger Pinch / Heart** | Morph into a spinning 3D glowing **Heart** |
 | ☝️ ✌️ 🤟 **1, 2, or 3 Fingers Raised** | Morph particles into 3D **Numbers (1–3)** |
