@@ -1,3 +1,14 @@
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white)
+![MediaPipe](https://img.shields.io/badge/MediaPipe-0097A7?style=for-the-badge&logo=google&logoColor=white)
+![WebGL](https://img.shields.io/badge/WebGL-990000?style=for-the-badge&logo=webgl&logoColor=white)
+![GLSL](https://img.shields.io/badge/GLSL-5586A4?style=for-the-badge&logo=opengl&logoColor=white)
+![Hand Tracking](https://img.shields.io/badge/Hand_Tracking-0A84FF?style=for-the-badge)
+![Particle System](https://img.shields.io/badge/Particle_System-8E01A7?style=for-the-badge)
+![Interactive 3D](https://img.shields.io/badge/Interactive_3D-FF9F0A?style=for-the-badge)
+![Vanilla JavaScript](https://img.shields.io/badge/Vanilla_JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Computer Vision](https://img.shields.io/badge/Computer_Vision-00B8D4?style=for-the-badge)
+![Creative Coding](https://img.shields.io/badge/Creative_Coding-E91E63?style=for-the-badge)
+
 # 🌌 Mind Matter Gimmick
 
 An interactive, real-time 3D particle showcase controlled entirely through webcam hand gestures. Built with **Three.js**, **custom WebGL/GLSL shaders**, and **MediaPipe Hands**, this single-file web application morphs 50,000+ GPU-accelerated particles seamlessly between cosmic planets, a glowing neural brain core, 3D shapes, and custom uploaded logos.
